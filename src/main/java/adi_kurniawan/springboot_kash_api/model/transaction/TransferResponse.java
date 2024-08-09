@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigInteger;
+import java.util.Date;
+import java.util.UUID;
 
 @Data
 @AllArgsConstructor
@@ -16,4 +18,6 @@ public class TransferResponse {
     private Long amount;
     private BigInteger destinationAccountNumber;
     private String description;
+    private UUID jurnalNumber;
+    private Date timestamp;
 }
