@@ -13,5 +13,7 @@ import java.util.Optional;
 public interface PocketRepository extends JpaRepository<Pocket, Integer> {
     Optional<Pocket> findFirstByUserAndAccountNumber(User user, Integer id);
 
+    Optional<Pocket> findFirstByAccountNumber(Integer id);
+
     List<Pocket> findAllByUserId(Integer userId);
 }

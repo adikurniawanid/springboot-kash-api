@@ -24,7 +24,7 @@ public class Pocket {
 
     private String name;
 
-    private Long amount;
+    private Long balance;
 
     @ManyToOne
     @JoinColumn(name = "userId", referencedColumnName = "id")

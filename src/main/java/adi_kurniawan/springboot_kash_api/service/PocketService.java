@@ -28,7 +28,7 @@ public class PocketService {
         return PocketResponse.builder()
                 .accountNumber(pocket.getAccountNumber())
                 .name(pocket.getName())
-                .amount(pocket.getAmount())
+                .balance(pocket.getBalance())
                 .build();
     }
 
@@ -39,7 +39,7 @@ public class PocketService {
         Pocket pocket = new Pocket();
         pocket.setName(request.getName());
         pocket.setAccountNumber(request.getAccountNumber());
-        pocket.setAmount(0L);
+        pocket.setBalance(0L);
         pocket.setUser(user);
 
         pocketRepository.save(pocket);
@@ -56,10 +56,6 @@ public class PocketService {
 
     @Transactional(readOnly = true)
     public PocketResponse get(User user, Integer id) {
-
-        log.info("USER ID >>> {}", user.getId().toString());
-        log.info("POCKET ID >>> {}", id);
-
         Pocket pocket = pocketRepository.findFirstByUserAndAccountNumber(user, id).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pocket not found")
         );

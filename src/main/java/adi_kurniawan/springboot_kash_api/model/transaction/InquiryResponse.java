@@ -1,18 +1,15 @@
-package adi_kurniawan.springboot_kash_api.model.pocket;
+package adi_kurniawan.springboot_kash_api.model.transaction;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigInteger;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class PocketResponse {
-    private BigInteger accountNumber;
+public class InquiryResponse {
     private String name;
     private Long balance;
 }
