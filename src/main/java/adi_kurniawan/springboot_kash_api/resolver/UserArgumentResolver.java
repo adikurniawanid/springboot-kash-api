@@ -1,6 +1,7 @@
 package adi_kurniawan.springboot_kash_api.resolver;
 
 import adi_kurniawan.springboot_kash_api.entity.User;
+import adi_kurniawan.springboot_kash_api.repository.UserDetailRepository;
 import adi_kurniawan.springboot_kash_api.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,8 @@ public class UserArgumentResolver implements HandlerMethodArgumentResolver {
 
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private UserDetailRepository userDetailRepository;
 
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
@@ -36,10 +39,12 @@ public class UserArgumentResolver implements HandlerMethodArgumentResolver {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
         }
 
-        log.info("DEBUG TOKEN >>> {}", token);
-
         User user = userRepository.findFirstByPublicId(UUID.fromString(token)).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized")
+        );
+
+        userDetailRepository.findFirstByUserId(user.getId()).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Please do onboarding first")
         );
 
 //        if (user.getTokenExpiredAt() < System.currentTimeMillis()) {

@@ -4,7 +4,10 @@ package adi_kurniawan.springboot_kash_api.service;
 import adi_kurniawan.springboot_kash_api.entity.Pocket;
 import adi_kurniawan.springboot_kash_api.entity.Transaction;
 import adi_kurniawan.springboot_kash_api.entity.User;
-import adi_kurniawan.springboot_kash_api.model.transaction.*;
+import adi_kurniawan.springboot_kash_api.model.transaction.HistoryResponse;
+import adi_kurniawan.springboot_kash_api.model.transaction.InquiryResponse;
+import adi_kurniawan.springboot_kash_api.model.transaction.TransferRequest;
+import adi_kurniawan.springboot_kash_api.model.transaction.TransferResponse;
 import adi_kurniawan.springboot_kash_api.repository.PocketRepository;
 import adi_kurniawan.springboot_kash_api.repository.TransactionRepository;
 import org.slf4j.Logger;
@@ -38,15 +41,16 @@ public class TransactionService {
     }
 
     @Transactional(readOnly = true)
-    public InquiryResponse inquiry(User user, InquiryRequest request) {
-        validationService.validate(request);
+    public InquiryResponse inquiry(User user, BigInteger accountNumber) {
 
-        Pocket pocket = pocketRepository.findFirstByAccountNumber(request.getAccountNumber()).orElseThrow(
+        Pocket pocket = pocketRepository.findFirstByAccountNumber(accountNumber).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account not found")
         );
 
         return InquiryResponse.builder()
-                .name(pocket.getUser().getUsername())
+                .name(Objects.isNull(pocket.getUser().getUserDetail())
+                        ? pocket.getUser().getUsername()
+                        : pocket.getUser().getUserDetail().getName())
                 .build();
     }
 

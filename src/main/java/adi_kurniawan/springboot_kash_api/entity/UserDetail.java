@@ -8,7 +8,6 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.math.BigInteger;
 import java.util.Date;
 
 @Setter
@@ -16,18 +15,16 @@ import java.util.Date;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "pocket", schema = "public")
-public class Pocket {
+@Table(name = "user_detail", schema = "public")
+public class UserDetail {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
-
-    @Column(name = "account_number")
-    private BigInteger accountNumber;
-
+    @Column(name = "user_id")
+    private int userId;
     private String name;
+    private String phone;
 
-    private Long balance;
+    @Column(name = "avatar_url")
+    private String avatarUrl;
 
     @CreationTimestamp
     private Date createdAt;
@@ -35,7 +32,8 @@ public class Pocket {
     @UpdateTimestamp
     private Date updatedAt;
 
-    @ManyToOne
-    @JoinColumn(name = "userId", referencedColumnName = "id")
+    @OneToOne(cascade = CascadeType.ALL)
+    @MapsId
+    @JoinColumn(name = "user_id", referencedColumnName = "id")
     private User user;
 }

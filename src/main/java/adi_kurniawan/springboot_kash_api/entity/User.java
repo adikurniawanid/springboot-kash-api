@@ -42,4 +42,7 @@ public class User {
 
     @OneToMany(mappedBy = "user")
     private List<Pocket> pockets;
+
+    @OneToOne(mappedBy = "user")
+    private UserDetail userDetail;
 }
