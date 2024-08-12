@@ -10,15 +10,21 @@ import java.util.Date;
 import java.util.UUID;
 
 @Data
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
-public class TransferResponse {
+public class HistoryResponse {
     private Date timestamp;
+
     private UUID journalNumber;
+
     private BigInteger sourceAccountNumber;
+
     private Long amount;
+
     private BigInteger destinationAccountNumber;
+
     private String description;
 
+    private String type;
 }

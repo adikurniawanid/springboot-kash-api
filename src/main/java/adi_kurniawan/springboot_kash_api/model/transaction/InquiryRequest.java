@@ -6,11 +6,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigInteger;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 public class InquiryRequest {
     @NotNull
-    private Integer accountNumber;
+    private BigInteger accountNumber;
 }

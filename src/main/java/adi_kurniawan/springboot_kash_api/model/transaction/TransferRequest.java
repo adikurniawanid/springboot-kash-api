@@ -6,19 +6,21 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigInteger;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 public class TransferRequest {
     @NotNull
-    private Integer sourceAccountNumber;
+    private BigInteger sourceAccountNumber;
 
     @NotNull
     private Long amount;
 
     @NotNull
-    private Integer destinationAccountNumber;
+    private BigInteger destinationAccountNumber;
 
     private String description;
 }
