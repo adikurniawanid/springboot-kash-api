@@ -9,6 +9,7 @@ import adi_kurniawan.springboot_kash_api.security.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,9 @@ public class AuthService {
     @Autowired
     private UserRepository userRepository;
 
+    @Value("${bcrypt.pepper}")
+    private String pepper;
+
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         validationService.validate(request);
@@ -38,10 +42,13 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username already registered");
         }
 
+        String salt = BCrypt.gensalt();
+
         User user = new User();
         user.setPublicId(UUID.randomUUID());
+        user.setSalt(salt);
         user.setEmail(request.getEmail());
-        user.setPassword(BCrypt.hashpw(request.getPassword(), BCrypt.gensalt()));
+        user.setPassword(BCrypt.hashpw(request.getPassword() + salt + pepper, BCrypt.gensalt()));
         user.setUsername(request.getUsername());
 
         userRepository.save(user);
@@ -60,7 +67,8 @@ public class AuthService {
         User user = userRepository.findFirstByUsername(request.getUsername())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Username or Password incorrect"));
 
-        if (BCrypt.checkpw(request.getPassword(), user.getPassword())) {
+
+        if (BCrypt.checkpw(request.getPassword() + user.getSalt() + pepper, user.getPassword())) {
             return AuthResponse.builder()
                     .publicId(user.getPublicId())
                     .username(user.getUsername())

@@ -32,6 +32,8 @@ public class User {
 
     private String password;
 
+    private String salt;
+
     @CreationTimestamp
     private Date createdAt;
 
