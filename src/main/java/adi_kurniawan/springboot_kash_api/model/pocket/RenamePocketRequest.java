@@ -1,4 +1,4 @@
-package adi_kurniawan.springboot_kash_api.model.transaction;
+package adi_kurniawan.springboot_kash_api.model.pocket;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -12,7 +12,10 @@ import java.math.BigInteger;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class HistoryRequest {
+public class RenamePocketRequest {
+    @NotNull
+    private String name;
+
     @NotNull
     private BigInteger accountNumber;
 }

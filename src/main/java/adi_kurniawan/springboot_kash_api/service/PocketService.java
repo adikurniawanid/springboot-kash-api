@@ -4,6 +4,7 @@ import adi_kurniawan.springboot_kash_api.entity.Pocket;
 import adi_kurniawan.springboot_kash_api.entity.User;
 import adi_kurniawan.springboot_kash_api.model.pocket.CreatePocketRequest;
 import adi_kurniawan.springboot_kash_api.model.pocket.PocketResponse;
+import adi_kurniawan.springboot_kash_api.model.pocket.RenamePocketRequest;
 import adi_kurniawan.springboot_kash_api.repository.PocketRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,6 +63,16 @@ public class PocketService {
         );
 
         return mapperResponse(pocket);
+    }
+
+
+    public void rename(User user, RenamePocketRequest request) {
+        Pocket pocket = pocketRepository.findFirstByUserAndAccountNumber(user, request.getAccountNumber()).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pocket not found")
+        );
+
+        pocket.setName(request.getName());
+        pocketRepository.save(pocket);
     }
 
 }

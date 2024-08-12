@@ -4,6 +4,7 @@ import adi_kurniawan.springboot_kash_api.entity.User;
 import adi_kurniawan.springboot_kash_api.model.WebResponse;
 import adi_kurniawan.springboot_kash_api.model.pocket.CreatePocketRequest;
 import adi_kurniawan.springboot_kash_api.model.pocket.PocketResponse;
+import adi_kurniawan.springboot_kash_api.model.pocket.RenamePocketRequest;
 import adi_kurniawan.springboot_kash_api.model.transaction.HistoryResponse;
 import adi_kurniawan.springboot_kash_api.service.PocketService;
 import adi_kurniawan.springboot_kash_api.service.TransactionService;
@@ -79,6 +80,24 @@ public class PocketController {
                 .<List<HistoryResponse>>builder()
                 .message("Get history list successfully")
                 .data(historyResponse)
+                .build();
+    }
+
+    @PutMapping(
+            path = "api/pocket/{pocketId}",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public WebResponse rename(User user,
+                              @RequestBody RenamePocketRequest request,
+                              @PathVariable("pocketId") BigInteger pocketId) {
+
+        request.setAccountNumber(pocketId);
+        pocketService.rename(user, request);
+
+        return WebResponse
+                .<PocketResponse>builder()
+                .message("Rename pocket successfully")
                 .build();
     }
 }
