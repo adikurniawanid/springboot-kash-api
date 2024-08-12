@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigInteger;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -79,7 +78,6 @@ public class TransactionService {
         transactionOutgoing.setDestinationAccountNumber(destinationPocket.getAccountNumber());
         transactionOutgoing.setAmount(request.getAmount());
         transactionOutgoing.setDescription(request.getDescription());
-        transactionOutgoing.setTimestamp(new Date());
         transactionOutgoing.setJournalNumber(UUID.randomUUID());
         transactionRepository.save(transactionOutgoing);
 
@@ -96,7 +94,7 @@ public class TransactionService {
 
     @Transactional(readOnly = true)
     public List<HistoryResponse> history(User user, BigInteger accountNumber) {
-        Pocket pocket = pocketRepository.findFirstByAccountNumber(accountNumber).orElseThrow(
+        Pocket pocket = pocketRepository.findFirstByUserAndAccountNumber(user, accountNumber).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pocket not found")
         );
 
@@ -111,7 +109,7 @@ public class TransactionService {
                     .amount(transaction.getAmount())
                     .description(transaction.getDescription())
                     .timestamp(transaction.getTimestamp())
-                    .type(Objects.equals(transaction.getSourceAccountNumber(), accountNumber) ? "KREDIT" : "DEBET")
+                    .type(Objects.equals(transaction.getSourceAccountNumber(), accountNumber) ? "(-)KREDIT" : "(+)DEBET")
                     .build();
         }).toList();
 

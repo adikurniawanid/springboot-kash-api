@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.util.Date;
 import java.util.List;
@@ -15,10 +17,10 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name= "user", schema = "public")
+@Table(name = "user", schema = "public")
 public class User {
     @Id
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @Column(name = "public_id")
@@ -30,8 +32,10 @@ public class User {
 
     private String password;
 
+    @CreationTimestamp
     private Date createdAt;
 
+    @UpdateTimestamp
     private Date updatedAt;
 
     private Date deletedAt;

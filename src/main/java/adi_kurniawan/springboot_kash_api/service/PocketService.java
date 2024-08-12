@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigInteger;
 import java.util.List;
 
 @Slf4j
@@ -55,7 +56,7 @@ public class PocketService {
     }
 
     @Transactional(readOnly = true)
-    public PocketResponse get(User user, Integer id) {
+    public PocketResponse get(User user, BigInteger id) {
         Pocket pocket = pocketRepository.findFirstByUserAndAccountNumber(user, id).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pocket not found")
         );

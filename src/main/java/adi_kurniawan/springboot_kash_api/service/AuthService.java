@@ -30,11 +30,11 @@ public class AuthService {
     public AuthResponse register(RegisterRequest request) {
         validationService.validate(request);
 
-        if (userRepository.findFirstByEmail(request.getEmail()).isPresent()){
+        if (userRepository.findFirstByEmail(request.getEmail()).isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already registered");
         }
 
-        if (userRepository.findFirstByUsername(request.getUsername()).isPresent()){
+        if (userRepository.findFirstByUsername(request.getUsername()).isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username already registered");
         }
 
@@ -43,9 +43,6 @@ public class AuthService {
         user.setEmail(request.getEmail());
         user.setPassword(BCrypt.hashpw(request.getPassword(), BCrypt.gensalt()));
         user.setUsername(request.getUsername());
-        user.setCreatedAt(
-                new java.util.Date()
-        );
 
         userRepository.save(user);
 
@@ -57,7 +54,7 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthResponse login(LoginRequest request){
+    public AuthResponse login(LoginRequest request) {
         validationService.validate(request);
 
         User user = userRepository.findFirstByUsername(request.getUsername())

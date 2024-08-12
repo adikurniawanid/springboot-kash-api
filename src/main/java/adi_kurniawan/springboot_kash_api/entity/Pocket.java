@@ -5,8 +5,11 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigInteger;
+import java.util.Date;
 
 @Setter
 @Getter
@@ -25,6 +28,13 @@ public class Pocket {
     private String name;
 
     private Long balance;
+
+    @CreationTimestamp
+    private Date createdAt;
+
+    @UpdateTimestamp
+    private Date updatedAt;
+
 
     @ManyToOne
     @JoinColumn(name = "userId", referencedColumnName = "id")

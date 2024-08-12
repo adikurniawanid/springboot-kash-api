@@ -57,7 +57,7 @@ public class PocketController {
             path = "api/pocket/{pocketId}",
             produces = MediaType.APPLICATION_JSON_VALUE)
     public WebResponse<PocketResponse> get(User user,
-                                           @PathVariable("pocketId") Integer id) {
+                                           @PathVariable("pocketId") BigInteger id) {
 
         PocketResponse pocketResponse = pocketService.get(user, id);
         return WebResponse

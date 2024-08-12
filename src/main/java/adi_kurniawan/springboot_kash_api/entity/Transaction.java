@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigInteger;
 import java.util.Date;
@@ -34,5 +35,6 @@ public class Transaction {
     @Column(name = "journal_number")
     private UUID journalNumber;
 
+    @CreationTimestamp
     private Date timestamp;
 }

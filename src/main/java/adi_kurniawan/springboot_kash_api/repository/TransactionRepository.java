@@ -9,9 +9,6 @@ import java.util.List;
 
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Integer> {
-    List<Transaction> findAllBySourceAccountNumber(BigInteger accountNumber);
-
+    //    list
     List<Transaction> findAllBySourceAccountNumberOrDestinationAccountNumber(BigInteger accountNumber, BigInteger sourceAccountNumber);
-
-    List<Transaction> findAllByDestinationAccountNumber(BigInteger accountNumber);
 }
