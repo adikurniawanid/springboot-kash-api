@@ -20,21 +20,24 @@ import java.util.UUID;
 public class Transaction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(nullable = false)
     private Integer id;
 
-    @Column(name = "source_account_number")
+    @Column(name = "source_account_number", nullable = false)
     private BigInteger sourceAccountNumber;
 
-    @Column(name = "destination_account_number")
+    @Column(name = "destination_account_number", nullable = false)
     private BigInteger destinationAccountNumber;
 
+    @Column(nullable = false)
     private Long amount;
 
     private String description;
 
-    @Column(name = "journal_number")
+    @Column(unique = true, updatable = false, name = "journal_number", nullable = false)
     private UUID journalNumber;
 
     @CreationTimestamp
+    @Column(updatable = false, nullable = false)
     private Date timestamp;
 }

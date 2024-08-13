@@ -20,16 +20,20 @@ import java.util.Date;
 public class Pocket {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(nullable = false)
     private Integer id;
 
-    @Column(name = "account_number")
+    @Column(name = "account_number", nullable = false)
     private BigInteger accountNumber;
 
+    @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false)
     private Long balance;
 
     @CreationTimestamp
+    @Column(updatable = false, nullable = false)
     private Date createdAt;
 
     @UpdateTimestamp

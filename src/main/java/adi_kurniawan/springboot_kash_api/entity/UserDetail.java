@@ -18,15 +18,20 @@ import java.util.Date;
 @Table(name = "user_detail", schema = "public")
 public class UserDetail {
     @Id
-    @Column(name = "user_id")
+    @Column(name = "user_id", nullable = false)
     private int userId;
+
+    @Column(nullable = false)
     private String name;
+
+    @Column(unique = true)
     private String phone;
 
     @Column(name = "avatar_url")
     private String avatarUrl;
 
     @CreationTimestamp
+    @Column(updatable = false, nullable = false)
     private Date createdAt;
 
     @UpdateTimestamp

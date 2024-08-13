@@ -21,20 +21,26 @@ import java.util.UUID;
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(nullable = false)
     private Integer id;
 
-    @Column(name = "public_id")
+    @Column(name = "public_id", unique = true, nullable = false)
     private UUID publicId;
 
+    @Column(unique = true, nullable = false)
     private String username;
 
+    @Column(unique = true, nullable = false)
     private String email;
 
+    @Column(nullable = false)
     private String password;
 
+    @Column(nullable = false)
     private String salt;
 
     @CreationTimestamp
+    @Column(updatable = false, nullable = false)
     private Date createdAt;
 
     @UpdateTimestamp
