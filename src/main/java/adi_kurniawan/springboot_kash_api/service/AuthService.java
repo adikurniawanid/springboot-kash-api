@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -96,20 +97,58 @@ public class AuthService {
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found")
         );
 
-        String token = BCrypt.hashpw(UUID.randomUUID().toString() + user.getPublicId(), BCrypt.gensalt());
+        String token = UUID.randomUUID().toString();
+
+        String hashToken = BCrypt.hashpw(token, BCrypt.gensalt());
 
         String link = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString() + "/api/auth/verify/" + token + "/" + user.getPublicId();
 
 
-        UserToken userToken = new UserToken();
+        if (Objects.isNull(userTokenRepository.findFirstByUserId(user.getId()))) {
+            UserToken userToken = new UserToken();
+            userToken.setUser(user);
+            userToken.setVerificationToken(hashToken);
+            userToken.setVerificationTokenExpireedAt(System.currentTimeMillis() + (1000 * 60 * 60 * 24 * 30));
+            userTokenRepository.save(userToken);
+        } else {
+            UserToken existUser = userTokenRepository.findFirstByUserId(user.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "token invalid"));
+            existUser.setVerificationToken(hashToken);
+            existUser.setVerificationTokenExpireedAt(System.currentTimeMillis() + (1000 * 60 * 60 * 24 * 30));
+            userTokenRepository.save(existUser);
+        }
 
-        userToken.setUser(user);
-        userToken.setVerificationToken(token);
-        userToken.setVerificationTokenExpireedAt(System.currentTimeMillis() + (1000 * 60 * 60 * 24 * 30));
-        userTokenRepository.save(userToken);
 
         emailService.sendHtmlEmail(user, "Verification Email - Kash", "C:\\Users\\adikr\\Documents\\GitHub\\springboot-kash-api\\src\\main\\resources\\templates\\verifyEmailTemplate.html", link);
     }
 
 
+    public void verification(String token, UUID publicId) {
+
+        User user = userRepository.findFirstByPublicId(publicId).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid token")
+        );
+
+        UserToken userToken = userTokenRepository.findFirstByUserId(user.getId()).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid token")
+        );
+
+        if (userToken.getVerificationTokenExpireedAt() < System.currentTimeMillis()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Expired token, please request a new token");
+        }
+
+        if (BCrypt.checkpw(token, userToken.getVerificationToken())) {
+            user.setIsVerified(true);
+            userRepository.save(user);
+
+            userToken.setVerificationToken(null);
+            userToken.setVerificationTokenExpireedAt(null);
+            userTokenRepository.save(userToken);
+
+
+        } else {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+        }
+
+
+    }
 }

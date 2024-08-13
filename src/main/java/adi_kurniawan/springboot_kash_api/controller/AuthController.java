@@ -9,11 +9,10 @@ import adi_kurniawan.springboot_kash_api.service.AuthService;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.UUID;
 
 @RestController
 public class AuthController {
@@ -48,11 +47,22 @@ public class AuthController {
     @PostMapping(path = "/api/auth/verify",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public WebResponse verificationEmail(@RequestBody RequestVerificationEmailRequest request) throws MessagingException, IOException {
+    public WebResponse requestVerificationEmail(@RequestBody RequestVerificationEmailRequest request) throws MessagingException, IOException {
         authService.requestVerification(request);
         return WebResponse
                 .builder()
                 .message("Request verification email successfully")
+                .build();
+    }
+
+    @GetMapping(path = "/api/auth/verify/{token}/{publicId}",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public WebResponse verificationEmail(@PathVariable("token") String token,
+                                         @PathVariable("publicId") UUID publicId) {
+        authService.verification(token, publicId);
+        return WebResponse
+                .builder()
+                .message("Verification email successfully")
                 .build();
     }
 }
