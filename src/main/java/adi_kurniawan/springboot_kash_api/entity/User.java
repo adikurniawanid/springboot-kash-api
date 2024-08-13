@@ -48,9 +48,16 @@ public class User {
 
     private Date deletedAt;
 
+    @Column(name = "is_verified")
+    private Boolean isVerified;
+
     @OneToMany(mappedBy = "user")
     private List<Pocket> pockets;
 
     @OneToOne(mappedBy = "user")
     private UserDetail userDetail;
+
+    @OneToOne(mappedBy = "user")
+    private UserToken userToken;
+
 }

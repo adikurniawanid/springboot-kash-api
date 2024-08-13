@@ -43,6 +43,11 @@ public class UserArgumentResolver implements HandlerMethodArgumentResolver {
                 () -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized")
         );
 
+        if (!user.getIsVerified()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Please verify your email first");
+        }
+
+
         userDetailRepository.findFirstByUserId(user.getId()).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Please do onboarding first")
         );
