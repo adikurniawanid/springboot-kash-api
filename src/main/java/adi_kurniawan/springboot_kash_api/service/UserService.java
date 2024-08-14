@@ -6,6 +6,7 @@ import adi_kurniawan.springboot_kash_api.model.User.OnboardingRequest;
 import adi_kurniawan.springboot_kash_api.model.User.UserResponse;
 import adi_kurniawan.springboot_kash_api.repository.UserDetailRepository;
 import adi_kurniawan.springboot_kash_api.repository.UserRepository;
+import adi_kurniawan.springboot_kash_api.security.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +33,6 @@ public class UserService {
                 () -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized")
         );
 
-
         if (userDetailRepository.findFirstByUserId(user.getId()).isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Account already onboarding");
         } else if (userDetailRepository.findFirstByPhone(request.getPhone()).isPresent()) {
@@ -48,7 +48,8 @@ public class UserService {
         userDetail.setUser(user);
         userDetailRepository.save(userDetail);
 
-
+        user.setPin(BCrypt.hashpw(request.getPin(), BCrypt.gensalt()));
+        userRepository.save(user);
     }
 
     public UserResponse get(User user) {

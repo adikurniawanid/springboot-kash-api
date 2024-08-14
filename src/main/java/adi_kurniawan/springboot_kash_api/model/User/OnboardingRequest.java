@@ -16,4 +16,5 @@ public class OnboardingRequest {
     private String phone;
     private String avatarUrl;
     private UUID publicId;
+    private String pin;
 }

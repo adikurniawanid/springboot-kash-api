@@ -51,6 +51,8 @@ public class User {
     @Column(name = "is_verified")
     private Boolean isVerified;
 
+    private String pin;
+
     @OneToMany(mappedBy = "user")
     private List<Pocket> pockets;
 

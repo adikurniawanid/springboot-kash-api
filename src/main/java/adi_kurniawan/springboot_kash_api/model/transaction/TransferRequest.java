@@ -23,4 +23,7 @@ public class TransferRequest {
     private BigInteger destinationAccountNumber;
 
     private String description;
+
+    @NotNull
+    private String pin;
 }

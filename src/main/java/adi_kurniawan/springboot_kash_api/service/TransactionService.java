@@ -10,6 +10,7 @@ import adi_kurniawan.springboot_kash_api.model.transaction.TransferRequest;
 import adi_kurniawan.springboot_kash_api.model.transaction.TransferResponse;
 import adi_kurniawan.springboot_kash_api.repository.PocketRepository;
 import adi_kurniawan.springboot_kash_api.repository.TransactionRepository;
+import adi_kurniawan.springboot_kash_api.security.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,7 +59,7 @@ public class TransactionService {
     public TransferResponse transfer(User user, TransferRequest request) {
         validationService.validate(request);
 
-        Pocket sourcePocket = pocketRepository.findFirstByAccountNumber(request.getSourceAccountNumber()).orElseThrow(
+        Pocket sourcePocket = pocketRepository.findFirstByUserAndAccountNumber(user, request.getSourceAccountNumber()).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Source account not found")
         );
 
@@ -71,29 +72,34 @@ public class TransactionService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient balance");
         }
 
-        sourcePocket.setBalance(sourcePocket.getBalance() - request.getAmount());
-        destinationPocket.setBalance(destinationPocket.getBalance() + request.getAmount());
-        pocketRepository.save(sourcePocket);
-        pocketRepository.save(destinationPocket);
+        if (BCrypt.checkpw(request.getPin(), user.getPin())) {
 
-        Transaction transactionOutgoing = new Transaction();
+            sourcePocket.setBalance(sourcePocket.getBalance() - request.getAmount());
+            destinationPocket.setBalance(destinationPocket.getBalance() + request.getAmount());
+            pocketRepository.save(sourcePocket);
+            pocketRepository.save(destinationPocket);
 
-        transactionOutgoing.setSourceAccountNumber(sourcePocket.getAccountNumber());
-        transactionOutgoing.setDestinationAccountNumber(destinationPocket.getAccountNumber());
-        transactionOutgoing.setAmount(request.getAmount());
-        transactionOutgoing.setDescription(request.getDescription());
-        transactionOutgoing.setJournalNumber(UUID.randomUUID());
-        transactionRepository.save(transactionOutgoing);
+            Transaction transactionOutgoing = new Transaction();
+
+            transactionOutgoing.setSourceAccountNumber(sourcePocket.getAccountNumber());
+            transactionOutgoing.setDestinationAccountNumber(destinationPocket.getAccountNumber());
+            transactionOutgoing.setAmount(request.getAmount());
+            transactionOutgoing.setDescription(request.getDescription());
+            transactionOutgoing.setJournalNumber(UUID.randomUUID());
+            transactionRepository.save(transactionOutgoing);
 
 
-        return TransferResponse.builder()
-                .journalNumber(transactionOutgoing.getJournalNumber())
-                .sourceAccountNumber(transactionOutgoing.getSourceAccountNumber())
-                .destinationAccountNumber(transactionOutgoing.getDestinationAccountNumber())
-                .amount(transactionOutgoing.getAmount())
-                .description(transactionOutgoing.getDescription())
-                .timestamp(transactionOutgoing.getTimestamp())
-                .build();
+            return TransferResponse.builder()
+                    .journalNumber(transactionOutgoing.getJournalNumber())
+                    .sourceAccountNumber(transactionOutgoing.getSourceAccountNumber())
+                    .destinationAccountNumber(transactionOutgoing.getDestinationAccountNumber())
+                    .amount(transactionOutgoing.getAmount())
+                    .description(transactionOutgoing.getDescription())
+                    .timestamp(transactionOutgoing.getTimestamp())
+                    .build();
+        } else {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Wrong PIN, please try again");
+        }
     }
 
     @Transactional(readOnly = true)
