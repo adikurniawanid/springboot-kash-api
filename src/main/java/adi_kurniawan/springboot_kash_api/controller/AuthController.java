@@ -58,7 +58,7 @@ public class AuthController {
     @GetMapping(path = "/api/auth/verify/{token}/{publicId}",
             produces = MediaType.APPLICATION_JSON_VALUE)
     public WebResponse verificationEmail(@PathVariable("token") String token,
-                                         @PathVariable("publicId") UUID publicId) {
+                                         @PathVariable("publicId") UUID publicId) throws MessagingException, IOException {
         authService.verification(token, publicId);
         return WebResponse
                 .builder()

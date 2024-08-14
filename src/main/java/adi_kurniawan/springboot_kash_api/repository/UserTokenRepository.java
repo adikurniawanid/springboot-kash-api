@@ -8,4 +8,6 @@ import java.util.Optional;
 public interface UserTokenRepository extends JpaRepository<UserToken, String> {
     Optional<UserToken> findFirstByUserId(Integer id);
 
+    Boolean existsByUserId(Integer id);
+
 }

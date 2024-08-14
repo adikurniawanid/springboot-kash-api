@@ -97,6 +97,10 @@ public class AuthService {
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found")
         );
 
+        if (user.getIsVerified()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "User already verified");
+        }
+
         String token = UUID.randomUUID().toString();
 
         String hashToken = BCrypt.hashpw(token, BCrypt.gensalt());
@@ -104,25 +108,26 @@ public class AuthService {
         String link = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString() + "/api/auth/verify/" + token + "/" + user.getPublicId();
 
 
-        if (Objects.isNull(userTokenRepository.findFirstByUserId(user.getId()))) {
+        if (userTokenRepository.existsByUserId(user.getId())) {
+            UserToken existUser = userTokenRepository.findFirstByUserId(user.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "token invalid"));
+            existUser.setVerificationToken(hashToken);
+            existUser.setVerificationTokenExpireedAt(System.currentTimeMillis() + (10000 * 60 * 60 * 24 * 30));
+            userTokenRepository.save(existUser);
+        } else {
             UserToken userToken = new UserToken();
             userToken.setUser(user);
             userToken.setVerificationToken(hashToken);
-            userToken.setVerificationTokenExpireedAt(System.currentTimeMillis() + (1000 * 60 * 60 * 24 * 30));
+            userToken.setVerificationTokenExpireedAt(System.currentTimeMillis() + (10000 * 60 * 60 * 24 * 30));
             userTokenRepository.save(userToken);
-        } else {
-            UserToken existUser = userTokenRepository.findFirstByUserId(user.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "token invalid"));
-            existUser.setVerificationToken(hashToken);
-            existUser.setVerificationTokenExpireedAt(System.currentTimeMillis() + (1000 * 60 * 60 * 24 * 30));
-            userTokenRepository.save(existUser);
         }
 
+        log.info("(DEV ONLY) VERIFICATION LINK : {}", link);
 
-        emailService.sendHtmlEmail(user, "Verification Email - Kash", "C:\\Users\\adikr\\Documents\\GitHub\\springboot-kash-api\\src\\main\\resources\\templates\\verifyEmailTemplate.html", link);
+        emailService.sendVerifyEmail(user, link);
     }
 
 
-    public void verification(String token, UUID publicId) {
+    public void verification(String token, UUID publicId) throws MessagingException, IOException {
 
         User user = userRepository.findFirstByPublicId(publicId).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid token")
@@ -131,6 +136,10 @@ public class AuthService {
         UserToken userToken = userTokenRepository.findFirstByUserId(user.getId()).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid token")
         );
+
+        if (Objects.isNull(userToken.getVerificationTokenExpireedAt())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid token");
+        }
 
         if (userToken.getVerificationTokenExpireedAt() < System.currentTimeMillis()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Expired token, please request a new token");
@@ -143,6 +152,8 @@ public class AuthService {
             userToken.setVerificationToken(null);
             userToken.setVerificationTokenExpireedAt(null);
             userTokenRepository.save(userToken);
+
+            emailService.sendWelcomeEmail(user);
 
 
         } else {
