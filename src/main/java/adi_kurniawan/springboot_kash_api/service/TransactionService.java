@@ -91,7 +91,9 @@ public class TransactionService {
 
             return TransferResponse.builder()
                     .journalNumber(transactionOutgoing.getJournalNumber())
+                    .senderName(sourcePocket.getUser().getUserDetail().getName())
                     .sourceAccountNumber(transactionOutgoing.getSourceAccountNumber())
+                    .receiverName(destinationPocket.getUser().getUserDetail().getName())
                     .destinationAccountNumber(transactionOutgoing.getDestinationAccountNumber())
                     .amount(transactionOutgoing.getAmount())
                     .description(transactionOutgoing.getDescription())
@@ -110,11 +112,12 @@ public class TransactionService {
 
         List<Transaction> history = transactionRepository.findAllBySourceAccountNumberOrDestinationAccountNumber(pocket.getAccountNumber(), pocket.getAccountNumber());
 
-
         return history.stream().map(transaction -> {
             return HistoryResponse.builder()
                     .journalNumber(transaction.getJournalNumber())
+                    .senderName(user.getUserDetail().getName())
                     .sourceAccountNumber(transaction.getSourceAccountNumber())
+                    .receiverName(inquiry(user, transaction.getSourceAccountNumber()).getName())
                     .destinationAccountNumber(transaction.getDestinationAccountNumber())
                     .amount(transaction.getAmount())
                     .description(transaction.getDescription())
@@ -122,7 +125,6 @@ public class TransactionService {
                     .type(Objects.equals(transaction.getSourceAccountNumber(), accountNumber) ? "(-)KREDIT" : "(+)DEBET")
                     .build();
         }).toList();
-
 
     }
 }

@@ -18,9 +18,13 @@ public class HistoryResponse {
 
     private UUID journalNumber;
 
+    private String senderName;
+
     private BigInteger sourceAccountNumber;
 
     private Long amount;
+    
+    private String receiverName;
 
     private BigInteger destinationAccountNumber;
 

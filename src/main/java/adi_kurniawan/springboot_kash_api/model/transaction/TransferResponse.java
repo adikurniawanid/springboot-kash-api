@@ -16,8 +16,10 @@ import java.util.UUID;
 public class TransferResponse {
     private Date timestamp;
     private UUID journalNumber;
+    private String senderName;
     private BigInteger sourceAccountNumber;
     private Long amount;
+    private String receiverName;
     private BigInteger destinationAccountNumber;
     private String description;
 

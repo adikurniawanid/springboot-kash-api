@@ -2,6 +2,7 @@ package adi_kurniawan.springboot_kash_api.service;
 
 import adi_kurniawan.springboot_kash_api.entity.User;
 import adi_kurniawan.springboot_kash_api.entity.UserDetail;
+import adi_kurniawan.springboot_kash_api.model.User.ChangePinRequest;
 import adi_kurniawan.springboot_kash_api.model.User.OnboardingRequest;
 import adi_kurniawan.springboot_kash_api.model.User.UserResponse;
 import adi_kurniawan.springboot_kash_api.repository.UserDetailRepository;
@@ -61,5 +62,14 @@ public class UserService {
                 .phone(user.getUserDetail().getPhone())
                 .avatarUrl(user.getUserDetail().getAvatarUrl())
                 .build();
+    }
+
+    public void changePin(User user, ChangePinRequest request) {
+        if (BCrypt.checkpw(request.getOldPin(), user.getPin())) {
+            user.setPin(BCrypt.hashpw(request.getNewPin(), BCrypt.gensalt()));
+            userRepository.save(user);
+        } else {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Wrong PIN");
+        }
     }
 }

@@ -1,6 +1,7 @@
 package adi_kurniawan.springboot_kash_api.controller;
 
 import adi_kurniawan.springboot_kash_api.entity.User;
+import adi_kurniawan.springboot_kash_api.model.User.ChangePinRequest;
 import adi_kurniawan.springboot_kash_api.model.User.OnboardingRequest;
 import adi_kurniawan.springboot_kash_api.model.User.UserResponse;
 import adi_kurniawan.springboot_kash_api.model.WebResponse;
@@ -43,6 +44,21 @@ public class UserController {
                 <UserResponse>builder()
                 .message("Successfully retrieved user details")
                 .data(userResponse)
+                .build();
+    }
+
+    @PutMapping(
+            path = "/api/user/{userPublicId}/change-pin",
+            consumes = MediaType.APPLICATION_JSON_VALUE)
+    public WebResponse changePin(User user,
+                                 @PathVariable("userPublicId") UUID userPublicId,
+                                 @RequestBody ChangePinRequest request) {
+
+        userService.changePin(user, request);
+
+        return WebResponse
+                .builder()
+                .message("Successfully change pin")
                 .build();
     }
 }
