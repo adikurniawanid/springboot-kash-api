@@ -1,6 +1,7 @@
 package adi_kurniawan.springboot_kash_api.controller;
 
 import adi_kurniawan.springboot_kash_api.entity.User;
+import adi_kurniawan.springboot_kash_api.model.User.ChangePasswordRequest;
 import adi_kurniawan.springboot_kash_api.model.User.ChangePinRequest;
 import adi_kurniawan.springboot_kash_api.model.User.OnboardingRequest;
 import adi_kurniawan.springboot_kash_api.model.User.UserResponse;
@@ -48,10 +49,23 @@ public class UserController {
     }
 
     @PutMapping(
-            path = "/api/user/{userPublicId}/change-pin",
+            path = "/api/user/change-password",
+            consumes = MediaType.APPLICATION_JSON_VALUE)
+    public WebResponse changePassword(User user,
+                                      @RequestBody ChangePasswordRequest request) {
+
+        userService.changePassword(user, request);
+
+        return WebResponse
+                .builder()
+                .message("Successfully change password")
+                .build();
+    }
+
+    @PutMapping(
+            path = "/api/user/change-pin",
             consumes = MediaType.APPLICATION_JSON_VALUE)
     public WebResponse changePin(User user,
-                                 @PathVariable("userPublicId") UUID userPublicId,
                                  @RequestBody ChangePinRequest request) {
 
         userService.changePin(user, request);
