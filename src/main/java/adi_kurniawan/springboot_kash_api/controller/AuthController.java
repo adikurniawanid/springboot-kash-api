@@ -70,7 +70,7 @@ public class AuthController {
         authService.forgotPassword(request);
         return WebResponse
                 .builder()
-                .message("Request forgot password email successfully, please check your email")
+                .message("Please check your email inbox for One Time Password (OTP)")
                 .build();
     }
 

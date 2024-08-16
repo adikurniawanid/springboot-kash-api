@@ -13,6 +13,8 @@ import java.util.UUID;
 @Builder
 public class AuthResponse {
     private UUID publicId;
+    private String name;
     private String username;
+    private String email;
     private String accessToken;
 }

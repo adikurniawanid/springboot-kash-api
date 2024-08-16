@@ -12,7 +12,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 public class OnboardingRequest {
-    private String name;
     private String phone;
     private String avatarUrl;
     private UUID publicId;

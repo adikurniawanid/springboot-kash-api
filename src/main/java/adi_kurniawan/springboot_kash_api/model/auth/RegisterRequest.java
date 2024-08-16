@@ -14,6 +14,10 @@ import lombok.NoArgsConstructor;
 @Builder
 public class RegisterRequest {
     @NotNull
+    @Size(min = 1, max = 100)
+    private String name;
+
+    @NotNull
     @Size(min = 8, max = 100)
     @Email
     private String email;

@@ -1,14 +1,13 @@
 package adi_kurniawan.springboot_kash_api.service;
 
 import adi_kurniawan.springboot_kash_api.entity.User;
-import adi_kurniawan.springboot_kash_api.entity.UserDetail;
-import adi_kurniawan.springboot_kash_api.entity.UserToken;
 import adi_kurniawan.springboot_kash_api.model.User.ChangePasswordRequest;
 import adi_kurniawan.springboot_kash_api.model.User.ChangePinRequest;
 import adi_kurniawan.springboot_kash_api.model.User.OnboardingRequest;
 import adi_kurniawan.springboot_kash_api.model.User.UserResponse;
 import adi_kurniawan.springboot_kash_api.repository.UserDetailRepository;
 import adi_kurniawan.springboot_kash_api.repository.UserRepository;
+import adi_kurniawan.springboot_kash_api.repository.UserStatusRepository;
 import adi_kurniawan.springboot_kash_api.repository.UserTokenRepository;
 import adi_kurniawan.springboot_kash_api.security.BCrypt;
 import org.slf4j.Logger;
@@ -19,6 +18,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Date;
+import java.util.Objects;
 
 @Service
 public class UserService {
@@ -33,6 +35,8 @@ public class UserService {
     private String pepper;
     @Autowired
     private UserTokenRepository userTokenRepository;
+    @Autowired
+    private UserStatusRepository userStatusRepository;
 
     @Transactional
     public void onboarding(OnboardingRequest request) {
@@ -42,27 +46,18 @@ public class UserService {
                 () -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized")
         );
 
-        if (userDetailRepository.findFirstByUserId(user.getId()).isPresent()) {
+        if (Objects.nonNull(user.getUserStatus().getOnboardedAt())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Account already onboarding");
         } else if (userDetailRepository.findFirstByPhone(request.getPhone()).isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Phone already registered, please user another phone number");
         }
 
-        UserDetail userDetail = new UserDetail();
 
-        userDetail.setName(request.getName());
-        userDetail.setPhone(request.getPhone());
-        userDetail.setAvatarUrl(request.getAvatarUrl());
-
-        userDetail.setUser(user);
-        userDetailRepository.save(userDetail);
-
+        user.getUserDetail().setPhone(request.getPhone());
+        user.getUserDetail().setAvatarUrl(request.getAvatarUrl());
         user.setPin(BCrypt.hashpw(request.getPin(), BCrypt.gensalt()));
+        user.getUserStatus().setOnboardedAt(new Date());
         userRepository.save(user);
-
-        UserToken userToken = new UserToken();
-        userToken.setUser(user);
-        userTokenRepository.save(userToken);
     }
 
     public UserResponse get(User user) {

@@ -1,9 +1,13 @@
 package adi_kurniawan.springboot_kash_api.service;
 
 import adi_kurniawan.springboot_kash_api.entity.User;
+import adi_kurniawan.springboot_kash_api.entity.UserDetail;
+import adi_kurniawan.springboot_kash_api.entity.UserStatus;
 import adi_kurniawan.springboot_kash_api.entity.UserToken;
 import adi_kurniawan.springboot_kash_api.model.auth.*;
+import adi_kurniawan.springboot_kash_api.repository.UserDetailRepository;
 import adi_kurniawan.springboot_kash_api.repository.UserRepository;
+import adi_kurniawan.springboot_kash_api.repository.UserStatusRepository;
 import adi_kurniawan.springboot_kash_api.repository.UserTokenRepository;
 import adi_kurniawan.springboot_kash_api.security.BCrypt;
 import jakarta.mail.MessagingException;
@@ -18,6 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -39,148 +44,11 @@ public class AuthService {
 
     @Autowired
     private UserTokenRepository userTokenRepository;
+    @Autowired
+    private UserDetailRepository userDetailRepository;
+    @Autowired
+    private UserStatusRepository userStatusRepository;
 
-    @Transactional
-    public AuthResponse register(RegisterRequest request) {
-        validationService.validate(request);
-
-        if (userRepository.findFirstByEmail(request.getEmail()).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already registered");
-        }
-
-        if (userRepository.findFirstByUsername(request.getUsername()).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username already registered");
-        }
-
-        String salt = BCrypt.gensalt();
-
-        User user = new User();
-        user.setPublicId(UUID.randomUUID());
-        user.setSalt(salt);
-        user.setEmail(request.getEmail());
-        user.setPassword(BCrypt.hashpw(request.getPassword() + salt + pepper, BCrypt.gensalt()));
-        user.setUsername(request.getUsername());
-        user.setIsVerified(false);
-        user.setPin("NOTSET");
-
-        userRepository.save(user);
-
-        return AuthResponse.builder()
-                .publicId(user.getPublicId())
-                .username(user.getUsername())
-                .accessToken(user.getPublicId().toString())
-                .build();
-    }
-
-    @Transactional
-    public AuthResponse login(LoginRequest request) {
-        validationService.validate(request);
-
-        User user = userRepository.findFirstByUsername(request.getUsername())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Username or Password incorrect"));
-
-
-        if (BCrypt.checkpw(request.getPassword() + user.getSalt() + pepper, user.getPassword())) {
-            return AuthResponse.builder()
-                    .publicId(user.getPublicId())
-                    .username(user.getUsername())
-                    .accessToken(user.getPublicId().toString())
-                    .build();
-        } else {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Incorrect password");
-        }
-    }
-
-    public void requestVerification(RequestVerificationEmailRequest request) throws MessagingException, IOException {
-        validationService.validate(request);
-        User user = userRepository.findFirstByUsername(request.getUsername()).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found")
-        );
-
-        if (user.getIsVerified()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "User already verified");
-        }
-
-        String token = UUID.randomUUID().toString();
-
-        String hashToken = BCrypt.hashpw(token, BCrypt.gensalt());
-
-        String link = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString() + "/api/auth/verify/" + token + "/" + user.getPublicId();
-
-
-        UserToken existUser = userTokenRepository.findFirstByUserId(user.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "token invalid"));
-        existUser.setVerificationToken(hashToken);
-        existUser.setVerificationTokenExpireedAt(System.currentTimeMillis() + (10000 * 60 * 60 * 24 * 30));
-        userTokenRepository.save(existUser);
-
-
-        log.info("(DEV ONLY) VERIFICATION LINK : {}", link);
-
-        emailService.sendVerifyEmail(user, link);
-    }
-
-
-    public void verification(String token, UUID publicId) throws MessagingException, IOException {
-
-        User user = userRepository.findFirstByPublicId(publicId).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid token")
-        );
-
-        UserToken userToken = userTokenRepository.findFirstByUserId(user.getId()).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid token")
-        );
-
-        if (Objects.isNull(userToken.getVerificationTokenExpireedAt())) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid token");
-        }
-
-        if (userToken.getVerificationTokenExpireedAt() < System.currentTimeMillis()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Expired token, please request a new token");
-        }
-
-        if (BCrypt.checkpw(token, userToken.getVerificationToken())) {
-            user.setIsVerified(true);
-            userRepository.save(user);
-
-            userToken.setVerificationToken(null);
-            userToken.setVerificationTokenExpireedAt(null);
-            userTokenRepository.save(userToken);
-
-            emailService.sendWelcomeEmail(user);
-
-
-        } else {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
-        }
-
-
-    }
-
-    public void forgotPassword(RequestForgotPasswordRequest request) throws MessagingException, IOException {
-        validationService.validate(request);
-
-        User user = userRepository.findFirstByEmail(request.getEmail()).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Email not found")
-        );
-
-        UserToken userToken = userTokenRepository.findFirstByUserId(user.getId()).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Email not found")
-        );
-
-        String token = getAlphaNumericString();
-
-        String hashToken = BCrypt.hashpw(token, BCrypt.gensalt());
-
-        userToken.setUser(user);
-        userToken.setForgotPasswordToken(hashToken);
-        userToken.setForgotPasswordTokenExpireedAt(System.currentTimeMillis() + (10000 * 60 * 60 * 24 * 30));
-        userTokenRepository.save(userToken);
-
-        emailService.sendForgotPasswordEmail(user, token);
-
-        log.info("(DEV ONLY) FORGOT PASSWORD TOKEN : {}", token);
-
-    }
 
     private String getAlphaNumericString() {
         Integer length = 6;
@@ -204,6 +72,139 @@ public class AuthService {
 
     }
 
+    @Transactional
+    public AuthResponse register(RegisterRequest request) {
+        validationService.validate(request);
+
+        if (userRepository.findFirstByEmail(request.getEmail()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already registered");
+        }
+
+        if (userRepository.findFirstByUsername(request.getUsername()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username already registered");
+        }
+
+        String salt = BCrypt.gensalt();
+
+        User user = new User();
+        user.setPublicId(UUID.randomUUID());
+        user.setSalt(salt);
+        user.setEmail(request.getEmail());
+        user.setPassword(BCrypt.hashpw(request.getPassword() + salt + pepper, BCrypt.gensalt()));
+        user.setUsername(request.getUsername());
+        user.setPin("NOTSET");
+        userRepository.save(user);
+
+        UserDetail userDetail = new UserDetail();
+        userDetail.setUser(user);
+        userDetail.setName(request.getName());
+        userDetailRepository.save(userDetail);
+
+        UserStatus userStatus = new UserStatus();
+        userStatus.setUser(user);
+        userStatusRepository.save(userStatus);
+
+        UserToken userToken = new UserToken();
+        userToken.setUser(user);
+        userTokenRepository.save(userToken);
+
+        return AuthResponse.builder()
+                .publicId(user.getPublicId())
+                .name(userDetail.getName())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .accessToken(user.getPublicId().toString())
+                .build();
+    }
+
+    @Transactional
+    public AuthResponse login(LoginRequest request) {
+        validationService.validate(request);
+
+        User user = userRepository.findFirstByUsername(request.getUsername())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Username or Password incorrect"));
+
+        if (BCrypt.checkpw(request.getPassword() + user.getSalt() + pepper, user.getPassword())) {
+            return AuthResponse.builder()
+                    .publicId(user.getPublicId())
+                    .name(user.getUserDetail().getName())
+                    .username(user.getUsername())
+                    .email(user.getEmail())
+                    .accessToken(user.getPublicId().toString())
+                    .build();
+        } else {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Incorrect password");
+        }
+    }
+
+    @Transactional
+    public void requestVerification(RequestVerificationEmailRequest request) throws MessagingException, IOException {
+        validationService.validate(request);
+        User user = userRepository.findFirstByEmail(request.getEmail()).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found")
+        );
+
+        if (Objects.nonNull(user.getUserStatus().getEmailVerifiedAt())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "User already verified");
+        }
+
+        String token = UUID.randomUUID().toString();
+        String hashToken = BCrypt.hashpw(token, BCrypt.gensalt());
+        String link = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString() + "/api/auth/verify/" + token + "/" + user.getPublicId();
+
+        user.getUserToken().setVerificationToken(hashToken);
+        user.getUserToken().setVerificationTokenExpireedAt(System.currentTimeMillis() + (10000 * 60 * 60 * 24 * 30));
+        userRepository.save(user);
+
+        emailService.sendVerifyEmail(user, link);
+
+        log.info("(DEV ONLY) VERIFICATION LINK : {}", link);
+    }
+
+    @Transactional
+    public void verification(String token, UUID publicId) throws MessagingException, IOException {
+        User user = userRepository.findFirstByPublicId(publicId).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found")
+        );
+
+        if (user.getUserToken().getVerificationTokenExpireedAt() < System.currentTimeMillis()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Expired token, please request a new token");
+        }
+
+        if (Objects.nonNull(user.getUserToken().getVerificationToken()) && BCrypt.checkpw(token, user.getUserToken().getVerificationToken())) {
+            user.getUserStatus().setEmailVerifiedAt(new Date());
+            user.getUserToken().setVerificationToken(null);
+            user.getUserToken().setVerificationTokenExpireedAt(null);
+            userRepository.save(user);
+
+            emailService.sendWelcomeEmail(user);
+        } else {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+        }
+    }
+
+    @Transactional
+    public void forgotPassword(RequestForgotPasswordRequest request) throws MessagingException, IOException {
+        validationService.validate(request);
+
+        User user = userRepository.findFirstByEmail(request.getEmail()).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Email not found")
+        );
+
+        String token = getAlphaNumericString();
+        String hashToken = BCrypt.hashpw(token, BCrypt.gensalt());
+
+        user.getUserToken().setForgotPasswordToken(hashToken);
+        user.getUserToken().setForgotPasswordTokenExpireedAt(System.currentTimeMillis() + (10000 * 60 * 60 * 24 * 30));
+        userRepository.save(user);
+
+        emailService.sendForgotPasswordEmail(user, token);
+
+        log.info("(DEV ONLY) FORGOT PASSWORD TOKEN : {}", token);
+    }
+
+
+    @Transactional
     public void changeForgotPassword(ChangeForgotPasswordRequest request) {
         validationService.validate(request);
 
@@ -211,29 +212,19 @@ public class AuthService {
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Email not found")
         );
 
-        UserToken userToken = userTokenRepository.findFirstByUserId(user.getId()).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid OTP")
-        );
-
-        if (Objects.isNull(userToken.getForgotPasswordTokenExpireedAt())) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid OTP");
-        }
-
-        if (userToken.getForgotPasswordTokenExpireedAt() < System.currentTimeMillis()) {
+        if (Objects.nonNull(user.getUserToken().getForgotPasswordTokenExpireedAt()) && user.getUserToken().getForgotPasswordTokenExpireedAt() < System.currentTimeMillis()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Expired OTP, please request a new OTP");
         }
 
-        if (BCrypt.checkpw(request.getOtp(), userToken.getForgotPasswordToken())) {
+        if (BCrypt.checkpw(request.getOtp(), user.getUserToken().getForgotPasswordToken())) {
             String salt = BCrypt.gensalt();
             user.setSalt(salt);
             user.setPassword(BCrypt.hashpw(request.getNewPassword() + salt + pepper, BCrypt.gensalt()));
-            userToken.setForgotPasswordToken(null);
-            userToken.setForgotPasswordTokenExpireedAt(null);
-            userTokenRepository.save(userToken);
+            user.getUserToken().setForgotPasswordToken(null);
+            user.getUserToken().setForgotPasswordTokenExpireedAt(null);
+            userRepository.save(user);
         } else {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid OTP");
         }
-
-
     }
 }

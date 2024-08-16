@@ -48,9 +48,6 @@ public class User {
 
     private Date deletedAt;
 
-    @Column(name = "is_verified")
-    private Boolean isVerified;
-
     private String pin;
 
     @OneToMany(mappedBy = "user")
@@ -58,6 +55,9 @@ public class User {
 
     @OneToOne(mappedBy = "user")
     private UserDetail userDetail;
+
+    @OneToOne(mappedBy = "user")
+    private UserStatus userStatus;
 
     @OneToOne(mappedBy = "user")
     private UserToken userToken;
