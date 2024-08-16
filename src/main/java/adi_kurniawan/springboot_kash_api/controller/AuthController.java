@@ -1,10 +1,7 @@
 package adi_kurniawan.springboot_kash_api.controller;
 
 import adi_kurniawan.springboot_kash_api.model.WebResponse;
-import adi_kurniawan.springboot_kash_api.model.auth.AuthResponse;
-import adi_kurniawan.springboot_kash_api.model.auth.LoginRequest;
-import adi_kurniawan.springboot_kash_api.model.auth.RegisterRequest;
-import adi_kurniawan.springboot_kash_api.model.auth.RequestVerificationEmailRequest;
+import adi_kurniawan.springboot_kash_api.model.auth.*;
 import adi_kurniawan.springboot_kash_api.service.AuthService;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,6 +60,28 @@ public class AuthController {
         return WebResponse
                 .builder()
                 .message("Verification email successfully")
+                .build();
+    }
+
+    @PostMapping(path = "/api/auth/forgot-password",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public WebResponse forgotPassword(@RequestBody RequestForgotPasswordRequest request) throws MessagingException, IOException {
+        authService.forgotPassword(request);
+        return WebResponse
+                .builder()
+                .message("Request forgot password email successfully, please check your email")
+                .build();
+    }
+
+    @PutMapping(path = "/api/auth/forgot-password",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public WebResponse changeForgotPassword(@RequestBody ChangeForgotPasswordRequest request) {
+        authService.changeForgotPassword(request);
+        return WebResponse
+                .builder()
+                .message("Change password successfully")
                 .build();
     }
 }

@@ -23,6 +23,12 @@ public class UserToken {
     @Column(name = "verification_token_expired_at")
     private Long verificationTokenExpireedAt;
 
+    @Column(name = "forgot_password_token")
+    private String forgotPasswordToken;
+
+    @Column(name = "forgot_password_token_expired_at")
+    private Long forgotPasswordTokenExpireedAt;
+
     @OneToOne(cascade = CascadeType.ALL)
     @MapsId
     @JoinColumn(name = "user_id", referencedColumnName = "id")

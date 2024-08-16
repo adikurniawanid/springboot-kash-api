@@ -30,6 +30,12 @@ public class EmailService {
         sendHtmlEmail(user, "welcome@kash.app", "Welcome to Kash! \uD83C\uDF89 Let the Adventure Begin! - Kash", "C:\\Users\\adikr\\Documents\\GitHub\\springboot-kash-api\\src\\main\\resources\\templates\\welcomeEmailTemplate.html", null);
     }
 
+
+    @Async
+    public void sendForgotPasswordEmail(User user, String link) throws MessagingException, IOException {
+        sendHtmlEmail(user, "forgot-password@kash.app", "Forgot Password - Kash", "C:\\Users\\adikr\\Documents\\GitHub\\springboot-kash-api\\src\\main\\resources\\templates\\forgotPasswordEmailTemplate.html", link);
+    }
+
     private void sendHtmlEmail(User user, String from, String subject, String pathEmailTemplate, String link) throws MessagingException, IOException {
         MimeMessage message = javaMailSender.createMimeMessage();
 
