@@ -49,6 +49,8 @@ public class AuthService {
     private UserDetailRepository userDetailRepository;
     @Autowired
     private UserStatusRepository userStatusRepository;
+    @Autowired
+    private TokenService tokenService;
 
 
     private String getAlphaNumericString() {
@@ -124,12 +126,17 @@ public class AuthService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Username or Password incorrect"));
 
         if (BCrypt.checkpw(request.getPassword() + user.getSalt() + pepper, user.getPassword())) {
+            user.getUserToken().setAccessToken(
+                    tokenService.generateToken(user)
+            );
+            userRepository.save(user);
+
             return AuthResponse.builder()
                     .publicId(user.getPublicId())
                     .name(user.getUserDetail().getName())
                     .username(user.getUsername())
                     .email(user.getEmail())
-                    .accessToken(user.getPublicId().toString())
+                    .accessToken(user.getUserToken().getAccessToken())
                     .build();
         } else {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Incorrect password");
@@ -151,7 +158,7 @@ public class AuthService {
         String link = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString() + "/api/auth/verify/" + token + "/" + user.getPublicId();
 
         user.getUserToken().setVerificationToken(hashToken);
-        user.getUserToken().setVerificationTokenExpireedAt(System.currentTimeMillis() + (10000L * 60 * 60 * 24 * 30));
+        user.getUserToken().setVerificationTokenExpiredAt(System.currentTimeMillis() + (10000L * 60 * 60 * 24 * 30));
         userRepository.save(user);
 
         emailService.sendVerifyEmail(user, link);
@@ -164,14 +171,14 @@ public class AuthService {
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found")
         );
 
-        if (user.getUserToken().getVerificationTokenExpireedAt() < System.currentTimeMillis()) {
+        if (user.getUserToken().getVerificationTokenExpiredAt() < System.currentTimeMillis()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Expired token, please request a new token");
         }
 
         if (Objects.nonNull(user.getUserToken().getVerificationToken()) && BCrypt.checkpw(token, user.getUserToken().getVerificationToken())) {
             user.getUserStatus().setEmailVerifiedAt(new Date());
             user.getUserToken().setVerificationToken(null);
-            user.getUserToken().setVerificationTokenExpireedAt(null);
+            user.getUserToken().setVerificationTokenExpiredAt(null);
             userRepository.save(user);
 
             emailService.sendWelcomeEmail(user);
@@ -191,7 +198,7 @@ public class AuthService {
         String hashToken = BCrypt.hashpw(token, BCrypt.gensalt());
 
         user.getUserToken().setForgotPasswordToken(hashToken);
-        user.getUserToken().setForgotPasswordTokenExpireedAt(System.currentTimeMillis() + (10000L * 60 * 60 * 24 * 30));
+        user.getUserToken().setForgotPasswordTokenExpiredAt(System.currentTimeMillis() + (10000L * 60 * 60 * 24 * 30));
         userRepository.save(user);
 
         emailService.sendForgotPasswordEmail(user, token);
@@ -207,7 +214,7 @@ public class AuthService {
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Email not found")
         );
 
-        if (Objects.nonNull(user.getUserToken().getForgotPasswordTokenExpireedAt()) && user.getUserToken().getForgotPasswordTokenExpireedAt() < System.currentTimeMillis()) {
+        if (Objects.nonNull(user.getUserToken().getForgotPasswordTokenExpiredAt()) && user.getUserToken().getForgotPasswordTokenExpiredAt() < System.currentTimeMillis()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Expired OTP, please request a new OTP");
         }
 
@@ -216,7 +223,7 @@ public class AuthService {
             user.setSalt(salt);
             user.setPassword(BCrypt.hashpw(request.getNewPassword() + salt + pepper, BCrypt.gensalt()));
             user.getUserToken().setForgotPasswordToken(null);
-            user.getUserToken().setForgotPasswordTokenExpireedAt(null);
+            user.getUserToken().setForgotPasswordTokenExpiredAt(null);
             userRepository.save(user);
         } else {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid OTP");
