@@ -1,5 +1,6 @@
 package adi_kurniawan.springboot_kash_api.controller;
 
+import adi_kurniawan.springboot_kash_api.entity.User;
 import adi_kurniawan.springboot_kash_api.model.WebResponse;
 import adi_kurniawan.springboot_kash_api.model.auth.*;
 import adi_kurniawan.springboot_kash_api.service.AuthService;
@@ -38,6 +39,16 @@ public class AuthController {
                 .<AuthResponse>builder()
                 .message("Login successfully")
                 .data(loginUser)
+                .build();
+    }
+
+    @PostMapping(path = "/api/auth/logout",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public WebResponse<AuthResponse> logout(User user) {
+        authService.logout(user);
+        return WebResponse
+                .<AuthResponse>builder()
+                .message("Logout successfully")
                 .build();
     }
 

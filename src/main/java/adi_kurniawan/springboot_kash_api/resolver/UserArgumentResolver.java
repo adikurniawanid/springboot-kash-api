@@ -1,8 +1,10 @@
 package adi_kurniawan.springboot_kash_api.resolver;
 
 import adi_kurniawan.springboot_kash_api.entity.User;
+import adi_kurniawan.springboot_kash_api.entity.UserToken;
 import adi_kurniawan.springboot_kash_api.repository.UserRepository;
 import adi_kurniawan.springboot_kash_api.repository.UserStatusRepository;
+import adi_kurniawan.springboot_kash_api.repository.UserTokenRepository;
 import adi_kurniawan.springboot_kash_api.service.TokenService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +19,6 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Objects;
-import java.util.UUID;
 
 @Slf4j
 @Component
@@ -29,6 +30,8 @@ public class UserArgumentResolver implements HandlerMethodArgumentResolver {
     private UserStatusRepository userStatusRepository;
     @Autowired
     private TokenService tokenService;
+    @Autowired
+    private UserTokenRepository userTokenRepository;
 
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
@@ -43,25 +46,21 @@ public class UserArgumentResolver implements HandlerMethodArgumentResolver {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
         }
 
-        String publicId = tokenService.validateToken(token);
-
-        User user = userRepository.findFirstByPublicId(UUID.fromString(publicId)).orElseThrow(
+        UserToken userToken = userTokenRepository.findFirstByAccessToken(token).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized")
         );
 
-        if (!user.getUserToken().getAccessToken().equals(token)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
-        }
+        tokenService.validateToken(token);
 
-        if (Objects.isNull(user.getUserStatus().getEmailVerifiedAt())) {
+        if (Objects.isNull(userToken.getUser().getUserStatus().getEmailVerifiedAt())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Please verify your email first");
         }
 
-        if (Objects.isNull(user.getUserStatus().getOnboardedAt())) {
+        if (Objects.isNull(userToken.getUser().getUserStatus().getOnboardedAt())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Please do onboarding first");
         }
 
-        return user;
+        return userToken.getUser();
 
     }
 }

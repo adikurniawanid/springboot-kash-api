@@ -229,4 +229,8 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid OTP");
         }
     }
+
+    public void logout(User user) {
+        user.getUserToken().setAccessToken(null);
+    }
 }
