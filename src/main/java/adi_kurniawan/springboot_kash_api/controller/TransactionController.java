@@ -3,6 +3,7 @@ package adi_kurniawan.springboot_kash_api.controller;
 import adi_kurniawan.springboot_kash_api.entity.User;
 import adi_kurniawan.springboot_kash_api.model.WebResponse;
 import adi_kurniawan.springboot_kash_api.model.transaction.InquiryResponse;
+import adi_kurniawan.springboot_kash_api.model.transaction.TopUpRequest;
 import adi_kurniawan.springboot_kash_api.model.transaction.TransferRequest;
 import adi_kurniawan.springboot_kash_api.model.transaction.TransferResponse;
 import adi_kurniawan.springboot_kash_api.service.TransactionService;
@@ -44,6 +45,20 @@ public class TransactionController {
                 .<TransferResponse>builder()
                 .message("Successfully transfer")
                 .data(transferResponse)
+                .build();
+    }
+
+    @PostMapping(
+            path = "/api/transaction/top-up",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public WebResponse topUp(User user,
+                             @RequestBody TopUpRequest request) {
+        transactionService.topUp(user, request);
+
+        return WebResponse
+                .<TransferResponse>builder()
+                .message("Successfully top up pocket")
                 .build();
     }
 }

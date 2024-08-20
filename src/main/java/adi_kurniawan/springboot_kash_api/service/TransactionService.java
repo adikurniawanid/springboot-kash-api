@@ -4,13 +4,12 @@ package adi_kurniawan.springboot_kash_api.service;
 import adi_kurniawan.springboot_kash_api.entity.Pocket;
 import adi_kurniawan.springboot_kash_api.entity.Transaction;
 import adi_kurniawan.springboot_kash_api.entity.User;
-import adi_kurniawan.springboot_kash_api.model.transaction.HistoryResponse;
-import adi_kurniawan.springboot_kash_api.model.transaction.InquiryResponse;
-import adi_kurniawan.springboot_kash_api.model.transaction.TransferRequest;
-import adi_kurniawan.springboot_kash_api.model.transaction.TransferResponse;
+import adi_kurniawan.springboot_kash_api.model.transaction.*;
 import adi_kurniawan.springboot_kash_api.repository.PocketRepository;
 import adi_kurniawan.springboot_kash_api.repository.TransactionRepository;
 import adi_kurniawan.springboot_kash_api.security.BCrypt;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -24,6 +23,7 @@ import java.util.UUID;
 
 @Service
 public class TransactionService {
+    private static final Logger log = LoggerFactory.getLogger(TransactionService.class);
     @Autowired
     private ValidationService validationService;
 
@@ -39,6 +39,11 @@ public class TransactionService {
 
     @Transactional(readOnly = true)
     public InquiryResponse inquiry(User user, BigInteger accountNumber) {
+        if (accountNumber.equals(BigInteger.ZERO)) {
+            return InquiryResponse.builder()
+                    .name("TOP UP SERVICE")
+                    .build();
+        }
         Pocket pocket = pocketRepository.findFirstByAccountNumber(accountNumber).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account not found")
         );
@@ -103,21 +108,40 @@ public class TransactionService {
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pocket not found")
         );
 
+
         List<Transaction> history = transactionRepository.findAllBySourceAccountNumberOrDestinationAccountNumber(pocket.getAccountNumber(), pocket.getAccountNumber());
 
-        return history.stream().map(transaction -> {
-            return HistoryResponse.builder()
-                    .journalNumber(transaction.getJournalNumber())
-                    .senderName(user.getUserDetail().getName())
-                    .sourceAccountNumber(transaction.getSourceAccountNumber())
-                    .receiverName(inquiry(user, transaction.getSourceAccountNumber()).getName())
-                    .destinationAccountNumber(transaction.getDestinationAccountNumber())
-                    .amount(transaction.getAmount())
-                    .description(transaction.getDescription())
-                    .timestamp(transaction.getTimestamp())
-                    .type(Objects.equals(transaction.getSourceAccountNumber(), accountNumber) ? "(-)KREDIT" : "(+)DEBET")
-                    .build();
-        }).toList();
+        return history.stream().map(transaction -> HistoryResponse.builder()
+                        .journalNumber(transaction.getJournalNumber())
+                        .senderName(inquiry(user, transaction.getSourceAccountNumber()).getName())
+                        .sourceAccountNumber(transaction.getSourceAccountNumber())
+                        .receiverName(inquiry(user, transaction.getDestinationAccountNumber()).getName())
+                        .destinationAccountNumber(transaction.getDestinationAccountNumber())
+                        .amount(transaction.getAmount())
+                        .description(transaction.getDescription())
+                        .timestamp(transaction.getTimestamp())
+                        .type(Objects.equals(transaction.getSourceAccountNumber(), accountNumber) ? "(-)KREDIT" : "(+)DEBET")
+                        .build()
+                )
+                .toList();
+    }
 
+    @Transactional
+    public void topUp(User user, TopUpRequest request) {
+        Pocket pocket = pocketRepository.findFirstByUserAndAccountNumber(user, request.getAccountNumber()).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pocket not found")
+        );
+
+        pocket.setBalance(pocket.getBalance() + request.getAmount());
+        pocketRepository.save(pocket);
+
+        Transaction topUpTransaction = new Transaction();
+
+        topUpTransaction.setSourceAccountNumber(request.getAccountNumber());
+        topUpTransaction.setDestinationAccountNumber(request.getAccountNumber());
+        topUpTransaction.setAmount(request.getAmount());
+        topUpTransaction.setDescription("TOP UP POCKET TRANSACTION");
+        topUpTransaction.setJournalNumber(UUID.randomUUID());
+        transactionRepository.save(topUpTransaction);
     }
 }
