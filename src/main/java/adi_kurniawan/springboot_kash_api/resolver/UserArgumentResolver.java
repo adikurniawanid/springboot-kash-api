@@ -60,7 +60,6 @@ public class UserArgumentResolver implements HandlerMethodArgumentResolver {
         if (Objects.isNull(userStatus.getOnboardedAt())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Please do onboarding first");
         }
-        ;
 
 //        if (user.getTokenExpiredAt() < System.currentTimeMillis()) {
 //            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");

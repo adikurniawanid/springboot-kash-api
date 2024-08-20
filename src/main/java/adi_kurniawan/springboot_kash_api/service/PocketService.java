@@ -40,7 +40,7 @@ public class PocketService {
 
         Pocket pocket = new Pocket();
         pocket.setName(request.getName());
-        pocket.setAccountNumber(request.getAccountNumber());
+        pocket.setAccountNumber(pocketRepository.getNextPocketId());
         pocket.setBalance(0L);
         pocket.setUser(user);
 

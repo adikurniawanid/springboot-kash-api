@@ -23,7 +23,7 @@ public class Pocket {
     @Column(nullable = false)
     private Integer id;
 
-    @Column(name = "account_number", nullable = false)
+    @Column(unique = true, name = "account_number", nullable = false, updatable = false)
     private BigInteger accountNumber;
 
     @Column(nullable = false)

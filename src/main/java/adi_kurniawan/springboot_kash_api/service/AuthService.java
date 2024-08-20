@@ -26,6 +26,7 @@ import java.util.Date;
 import java.util.Objects;
 import java.util.UUID;
 
+@Transactional
 @Service
 public class AuthService {
 
@@ -51,7 +52,7 @@ public class AuthService {
 
 
     private String getAlphaNumericString() {
-        Integer length = 6;
+        int length = 6;
         String AlphaNumericString = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                 + "0123456789"
                 + "abcdefghijklmnopqrstuvxyz";
@@ -72,7 +73,6 @@ public class AuthService {
 
     }
 
-    @Transactional
     public AuthResponse register(RegisterRequest request) {
         validationService.validate(request);
 
@@ -117,7 +117,6 @@ public class AuthService {
                 .build();
     }
 
-    @Transactional
     public AuthResponse login(LoginRequest request) {
         validationService.validate(request);
 
@@ -137,7 +136,6 @@ public class AuthService {
         }
     }
 
-    @Transactional
     public void requestVerification(RequestVerificationEmailRequest request) throws MessagingException, IOException {
         validationService.validate(request);
         User user = userRepository.findFirstByEmail(request.getEmail()).orElseThrow(
@@ -153,7 +151,7 @@ public class AuthService {
         String link = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString() + "/api/auth/verify/" + token + "/" + user.getPublicId();
 
         user.getUserToken().setVerificationToken(hashToken);
-        user.getUserToken().setVerificationTokenExpireedAt(System.currentTimeMillis() + (10000 * 60 * 60 * 24 * 30));
+        user.getUserToken().setVerificationTokenExpireedAt(System.currentTimeMillis() + (10000L * 60 * 60 * 24 * 30));
         userRepository.save(user);
 
         emailService.sendVerifyEmail(user, link);
@@ -161,7 +159,6 @@ public class AuthService {
         log.info("(DEV ONLY) VERIFICATION LINK : {}", link);
     }
 
-    @Transactional
     public void verification(String token, UUID publicId) throws MessagingException, IOException {
         User user = userRepository.findFirstByPublicId(publicId).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found")
@@ -183,7 +180,6 @@ public class AuthService {
         }
     }
 
-    @Transactional
     public void forgotPassword(RequestForgotPasswordRequest request) throws MessagingException, IOException {
         validationService.validate(request);
 
@@ -195,7 +191,7 @@ public class AuthService {
         String hashToken = BCrypt.hashpw(token, BCrypt.gensalt());
 
         user.getUserToken().setForgotPasswordToken(hashToken);
-        user.getUserToken().setForgotPasswordTokenExpireedAt(System.currentTimeMillis() + (10000 * 60 * 60 * 24 * 30));
+        user.getUserToken().setForgotPasswordTokenExpireedAt(System.currentTimeMillis() + (10000L * 60 * 60 * 24 * 30));
         userRepository.save(user);
 
         emailService.sendForgotPasswordEmail(user, token);
@@ -204,7 +200,6 @@ public class AuthService {
     }
 
 
-    @Transactional
     public void changeForgotPassword(ChangeForgotPasswordRequest request) {
         validationService.validate(request);
 

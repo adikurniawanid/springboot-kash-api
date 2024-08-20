@@ -11,8 +11,6 @@ import adi_kurniawan.springboot_kash_api.model.transaction.TransferResponse;
 import adi_kurniawan.springboot_kash_api.repository.PocketRepository;
 import adi_kurniawan.springboot_kash_api.repository.TransactionRepository;
 import adi_kurniawan.springboot_kash_api.security.BCrypt;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -26,8 +24,6 @@ import java.util.UUID;
 
 @Service
 public class TransactionService {
-
-    private static final Logger log = LoggerFactory.getLogger(TransactionService.class);
     @Autowired
     private ValidationService validationService;
 
@@ -43,15 +39,12 @@ public class TransactionService {
 
     @Transactional(readOnly = true)
     public InquiryResponse inquiry(User user, BigInteger accountNumber) {
-
         Pocket pocket = pocketRepository.findFirstByAccountNumber(accountNumber).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account not found")
         );
 
         return InquiryResponse.builder()
-                .name(Objects.isNull(pocket.getUser().getUserDetail())
-                        ? pocket.getUser().getUsername()
-                        : pocket.getUser().getUserDetail().getName())
+                .name(pocket.getUser().getUserDetail().getName())
                 .build();
     }
 

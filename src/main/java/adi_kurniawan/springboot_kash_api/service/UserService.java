@@ -7,11 +7,7 @@ import adi_kurniawan.springboot_kash_api.model.User.OnboardingRequest;
 import adi_kurniawan.springboot_kash_api.model.User.UserResponse;
 import adi_kurniawan.springboot_kash_api.repository.UserDetailRepository;
 import adi_kurniawan.springboot_kash_api.repository.UserRepository;
-import adi_kurniawan.springboot_kash_api.repository.UserStatusRepository;
-import adi_kurniawan.springboot_kash_api.repository.UserTokenRepository;
 import adi_kurniawan.springboot_kash_api.security.BCrypt;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -23,22 +19,21 @@ import java.util.Date;
 import java.util.Objects;
 
 @Service
+@Transactional
 public class UserService {
-    private static final Logger log = LoggerFactory.getLogger(UserService.class);
     @Autowired
     private UserDetailRepository userDetailRepository;
+
     @Autowired
     private ValidationService validationService;
+
     @Autowired
     private UserRepository userRepository;
+
     @Value("${bcrypt.pepper}")
     private String pepper;
-    @Autowired
-    private UserTokenRepository userTokenRepository;
-    @Autowired
-    private UserStatusRepository userStatusRepository;
 
-    @Transactional
+
     public void onboarding(OnboardingRequest request) {
         validationService.validate(request);
 

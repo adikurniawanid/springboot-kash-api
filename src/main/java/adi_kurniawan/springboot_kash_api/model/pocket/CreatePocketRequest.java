@@ -7,8 +7,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigInteger;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -17,7 +15,4 @@ public class CreatePocketRequest {
     @NotNull
     @Size(min = 1, max = 100)
     private String name;
-
-    @NotNull
-    private BigInteger accountNumber;
 }

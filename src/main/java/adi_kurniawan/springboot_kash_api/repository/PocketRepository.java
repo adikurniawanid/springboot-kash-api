@@ -3,6 +3,7 @@ package adi_kurniawan.springboot_kash_api.repository;
 import adi_kurniawan.springboot_kash_api.entity.Pocket;
 import adi_kurniawan.springboot_kash_api.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigInteger;
@@ -20,4 +21,7 @@ public interface PocketRepository extends JpaRepository<Pocket, Integer> {
 
     //    list
     List<Pocket> findAllByUserId(Integer userId);
+
+    @Query(value = "SELECT nextval('pocket_accountnumber_seq')", nativeQuery = true)
+    BigInteger getNextPocketId();
 }
