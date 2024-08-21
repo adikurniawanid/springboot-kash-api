@@ -22,6 +22,7 @@ public interface PocketRepository extends JpaRepository<Pocket, Integer> {
     //    list
     List<Pocket> findAllByUserId(Integer userId);
 
+    //    auto generate account number
     @Query(value = "SELECT nextval('pocket_accountnumber_seq')", nativeQuery = true)
     BigInteger getNextPocketId();
 }

@@ -143,12 +143,7 @@ public class AuthService {
         }
     }
 
-    public void requestVerification(RequestVerificationEmailRequest request) throws MessagingException, IOException {
-        validationService.validate(request);
-        User user = userRepository.findFirstByEmail(request.getEmail()).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found")
-        );
-
+    public void requestVerification(User user) throws MessagingException, IOException {
         if (Objects.nonNull(user.getUserStatus().getEmailVerifiedAt())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "User already verified");
         }

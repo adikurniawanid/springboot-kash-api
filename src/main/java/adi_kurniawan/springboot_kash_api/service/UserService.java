@@ -34,19 +34,16 @@ public class UserService {
     private String pepper;
 
 
-    public void onboarding(OnboardingRequest request) {
+    public void onboarding(User user, OnboardingRequest request) {
         validationService.validate(request);
-
-        User user = userRepository.findFirstByPublicId(request.getPublicId()).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized")
-        );
 
         if (Objects.nonNull(user.getUserStatus().getOnboardedAt())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Account already onboarding");
-        } else if (userDetailRepository.findFirstByPhone(request.getPhone()).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Phone already registered, please user another phone number");
         }
 
+        if (userDetailRepository.findFirstByPhone(request.getPhone()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Phone already registered, please user another phone number");
+        }
 
         user.getUserDetail().setPhone(request.getPhone());
         user.getUserDetail().setAvatarUrl(request.getAvatarUrl());

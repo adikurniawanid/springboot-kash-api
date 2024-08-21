@@ -11,8 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
-
 @RestController
 public class UserController {
 
@@ -21,15 +19,13 @@ public class UserController {
 
 
     @PostMapping(
-            path = "/api/user/{userPublicId}/onboarding",
+            path = "/api/user/onboarding",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public WebResponse onboarding(@PathVariable("userPublicId") UUID userPublicId,
+    public WebResponse onboarding(User user,
                                   @RequestBody OnboardingRequest request) {
 
-        request.setPublicId(userPublicId);
-
-        userService.onboarding(request);
+        userService.onboarding(user, request);
 
         return WebResponse
                 .<UserResponse>builder()

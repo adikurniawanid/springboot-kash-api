@@ -53,10 +53,9 @@ public class AuthController {
     }
 
     @PostMapping(path = "/api/auth/verify",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public WebResponse requestVerificationEmail(@RequestBody RequestVerificationEmailRequest request) throws MessagingException, IOException {
-        authService.requestVerification(request);
+    public WebResponse requestVerificationEmail(User user) throws MessagingException, IOException {
+        authService.requestVerification(user);
         return WebResponse
                 .builder()
                 .message("Request verification email successfully")

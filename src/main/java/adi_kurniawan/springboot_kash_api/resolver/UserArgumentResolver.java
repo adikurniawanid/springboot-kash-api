@@ -42,6 +42,7 @@ public class UserArgumentResolver implements HandlerMethodArgumentResolver {
     public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer, NativeWebRequest webRequest, WebDataBinderFactory binderFactory) {
         HttpServletRequest servletRequest = (HttpServletRequest) webRequest.getNativeRequest();
         String token = servletRequest.getHeader("Authorization");
+        
         if (token == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
         }
@@ -52,8 +53,16 @@ public class UserArgumentResolver implements HandlerMethodArgumentResolver {
 
         tokenService.validateToken(token);
 
+        if (servletRequest.getRequestURI().equals("/api/auth/verify")) {
+            return userToken.getUser();
+        }
+
         if (Objects.isNull(userToken.getUser().getUserStatus().getEmailVerifiedAt())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Please verify your email first");
+        }
+
+        if (servletRequest.getRequestURI().equals("/api/user/onboarding")) {
+            return userToken.getUser();
         }
 
         if (Objects.isNull(userToken.getUser().getUserStatus().getOnboardedAt())) {
