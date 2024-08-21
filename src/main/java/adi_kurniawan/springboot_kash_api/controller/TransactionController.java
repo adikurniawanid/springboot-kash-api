@@ -2,10 +2,7 @@ package adi_kurniawan.springboot_kash_api.controller;
 
 import adi_kurniawan.springboot_kash_api.entity.User;
 import adi_kurniawan.springboot_kash_api.model.WebResponse;
-import adi_kurniawan.springboot_kash_api.model.transaction.InquiryResponse;
-import adi_kurniawan.springboot_kash_api.model.transaction.TopUpRequest;
-import adi_kurniawan.springboot_kash_api.model.transaction.TransferRequest;
-import adi_kurniawan.springboot_kash_api.model.transaction.TransferResponse;
+import adi_kurniawan.springboot_kash_api.model.transaction.*;
 import adi_kurniawan.springboot_kash_api.service.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -59,6 +56,56 @@ public class TransactionController {
         return WebResponse
                 .<TransferResponse>builder()
                 .message("Successfully top up pocket")
+                .build();
+    }
+
+    @PostMapping(
+            path = "/api/transaction/code-pay",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public WebResponse<CreateCodePayResponse> createCodePay(User user,
+                                                            @RequestBody CreateCodePayRequest request) {
+        String codePay = transactionService.createCodePay(user, request);
+
+        CreateCodePayResponse response = new CreateCodePayResponse();
+        response.setCode(codePay);
+
+        return WebResponse
+                .<CreateCodePayResponse>builder()
+                .message("Successfully create code pay")
+                .data(response)
+                .build();
+    }
+
+    @GetMapping(
+            path = "/api/transaction/code-pay/{codePay}",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public WebResponse<CodePayResponse> codePay(User user,
+                                                @PathVariable("codePay") String codePay) {
+        CodePayResponse codePayResponse = transactionService.getCodePay(user, codePay);
+
+        return WebResponse
+                .<CodePayResponse>builder()
+                .message("Successfully get information code pay")
+                .data(codePayResponse)
+                .build();
+    }
+
+    @PostMapping(
+            path = "/api/transaction/code-pay/{codePay}",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public WebResponse<TransferResponse> codePayPayment(User user,
+                                                        @PathVariable("codePay") String codePay,
+                                                        @RequestBody CodePayRequest request) {
+
+        request.setCode(codePay);
+        TransferResponse transferResponse = transactionService.codePayPayment(user, request);
+
+        return WebResponse
+                .<TransferResponse>builder()
+                .message("Successfully transfer via code pay")
+                .data(transferResponse)
                 .build();
     }
 }
