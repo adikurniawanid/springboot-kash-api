@@ -2,8 +2,6 @@ package adi_kurniawan.springboot_kash_api.resolver;
 
 import adi_kurniawan.springboot_kash_api.entity.User;
 import adi_kurniawan.springboot_kash_api.entity.UserToken;
-import adi_kurniawan.springboot_kash_api.repository.UserRepository;
-import adi_kurniawan.springboot_kash_api.repository.UserStatusRepository;
 import adi_kurniawan.springboot_kash_api.repository.UserTokenRepository;
 import adi_kurniawan.springboot_kash_api.service.TokenService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,13 +21,9 @@ import java.util.Objects;
 @Slf4j
 @Component
 public class UserArgumentResolver implements HandlerMethodArgumentResolver {
-
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private UserStatusRepository userStatusRepository;
     @Autowired
     private TokenService tokenService;
+    
     @Autowired
     private UserTokenRepository userTokenRepository;
 
@@ -42,7 +36,7 @@ public class UserArgumentResolver implements HandlerMethodArgumentResolver {
     public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer, NativeWebRequest webRequest, WebDataBinderFactory binderFactory) {
         HttpServletRequest servletRequest = (HttpServletRequest) webRequest.getNativeRequest();
         String token = servletRequest.getHeader("Authorization");
-        
+
         if (token == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
         }
