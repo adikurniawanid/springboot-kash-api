@@ -9,8 +9,6 @@ import adi_kurniawan.springboot_kash_api.repository.PocketRepository;
 import adi_kurniawan.springboot_kash_api.repository.TransactionRepository;
 import adi_kurniawan.springboot_kash_api.security.BCrypt;
 import com.auth0.jwt.interfaces.Claim;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -22,7 +20,6 @@ import java.util.*;
 
 @Service
 public class TransactionService {
-    private static final Logger log = LoggerFactory.getLogger(TransactionService.class);
     @Autowired
     private ValidationService validationService;
 
@@ -31,6 +28,7 @@ public class TransactionService {
 
     @Autowired
     private TransactionRepository transactionRepository;
+
     @Autowired
     private TokenService tokenService;
 
@@ -146,6 +144,7 @@ public class TransactionService {
         transactionRepository.save(topUpTransaction);
     }
 
+    @Transactional
     public String createCodePay(User user, CreateCodePayRequest request) {
         validationService.validate(request);
 
@@ -156,8 +155,8 @@ public class TransactionService {
         return tokenService.generateCodePay(request);
     }
 
+    @Transactional
     public CodePayResponse getCodePay(User user, String codePay) {
-
         Map<String, Claim> codePayPayload = tokenService.codePayValidate(codePay);
 
         CodePayResponse codePayResponse = new CodePayResponse();
@@ -169,6 +168,7 @@ public class TransactionService {
         return codePayResponse;
     }
 
+    @Transactional
     public TransferResponse codePayPayment(User user, CodePayRequest request) {
         validationService.validate(request);
         Map<String, Claim> codePayPayload = tokenService.codePayValidate(request.getCode());
@@ -177,9 +177,28 @@ public class TransactionService {
         transferRequest.setSourceAccountNumber(request.getAccountNumber());
         transferRequest.setDestinationAccountNumber(new BigInteger(codePayPayload.get("destinationAccountNumber").toString().replaceAll("\"", "")));
         transferRequest.setAmount(codePayPayload.get("amount").asLong());
-        transferRequest.setDescription(Objects.nonNull(request.getDescription()) ? "CODEPAY " + request.getDescription() : "CODEPAY " + codePayPayload.get("description").toString().replaceAll("\"", ""));
+        transferRequest.setDescription(Objects.nonNull(request.getDescription())
+                ? "CODEPAY " + request.getDescription()
+                : "CODEPAY " + codePayPayload.get("description").toString().replaceAll("\"", ""));
         transferRequest.setPin(request.getPin());
 
         return transfer(user, transferRequest);
+    }
+
+    @Transactional
+    public void reversal(User user, ReversalRequest request) {
+        Transaction transaction = transactionRepository.findFirstByJournalNumber(request.getJournalNumber()).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found")
+        );
+
+        TransferRequest transferRequest = new TransferRequest();
+        transferRequest.setSourceAccountNumber(transaction.getDestinationAccountNumber());
+        transferRequest.setAmount(transaction.getAmount());
+        transferRequest.setDestinationAccountNumber(transaction.getSourceAccountNumber());
+        transferRequest.setDescription("REVERSAL " + request.getReason());
+        transferRequest.setPin(request.getPin());
+
+
+        transfer(user, transferRequest);
     }
 }

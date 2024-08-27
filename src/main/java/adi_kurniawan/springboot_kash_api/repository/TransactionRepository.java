@@ -6,9 +6,13 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Integer> {
     //    list
     List<Transaction> findAllBySourceAccountNumberOrDestinationAccountNumber(BigInteger accountNumber, BigInteger sourceAccountNumber);
+
+    Optional<Transaction> findFirstByJournalNumber(UUID journalNumber);
 }

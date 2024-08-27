@@ -9,6 +9,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigInteger;
+import java.util.UUID;
 
 @RestController
 public class TransactionController {
@@ -106,6 +107,23 @@ public class TransactionController {
                 .<TransferResponse>builder()
                 .message("Successfully transfer via code pay")
                 .data(transferResponse)
+                .build();
+    }
+
+    @PostMapping(
+            path = "/api/transaction/{journal}/reversal",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public WebResponse reversal(User user,
+                                @PathVariable("journal") UUID journal,
+                                @RequestBody ReversalRequest request) {
+
+        request.setJournalNumber(journal);
+        transactionService.reversal(user, request);
+
+        return WebResponse
+                .builder()
+                .message("Successfully reversal transaction")
                 .build();
     }
 }
