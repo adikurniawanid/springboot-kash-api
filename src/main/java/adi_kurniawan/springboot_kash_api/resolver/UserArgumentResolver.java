@@ -23,7 +23,7 @@ import java.util.Objects;
 public class UserArgumentResolver implements HandlerMethodArgumentResolver {
     @Autowired
     private TokenService tokenService;
-    
+
     @Autowired
     private UserTokenRepository userTokenRepository;
 
@@ -47,7 +47,7 @@ public class UserArgumentResolver implements HandlerMethodArgumentResolver {
 
         tokenService.validateToken(token);
 
-        if (servletRequest.getRequestURI().equals("/api/auth/verify")) {
+        if (servletRequest.getRequestURI().equals("/api/auth/logout") || servletRequest.getRequestURI().equals("/api/auth/verify")) {
             return userToken.getUser();
         }
 

@@ -97,6 +97,10 @@ public class AuthService {
         user.setPin("NOTSET");
         userRepository.save(user);
 
+        User createdUser = userRepository.findFirstByPublicId(user.getPublicId()).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found")
+        );
+
         UserDetail userDetail = new UserDetail();
         userDetail.setUser(user);
         userDetail.setName(request.getName());
@@ -107,6 +111,10 @@ public class AuthService {
         userStatusRepository.save(userStatus);
 
         UserToken userToken = new UserToken();
+
+        String jwtToken = tokenService.generateToken(createdUser);
+
+        userToken.setAccessToken(jwtToken);
         userToken.setUser(user);
         userTokenRepository.save(userToken);
 
@@ -115,7 +123,7 @@ public class AuthService {
                 .name(userDetail.getName())
                 .username(user.getUsername())
                 .email(user.getEmail())
-                .accessToken(user.getPublicId().toString())
+                .accessToken(jwtToken)
                 .build();
     }
 
