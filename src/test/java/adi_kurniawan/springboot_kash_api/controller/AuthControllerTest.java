@@ -9,6 +9,7 @@ import adi_kurniawan.springboot_kash_api.model.auth.RequestForgotPasswordRequest
 import adi_kurniawan.springboot_kash_api.repository.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +56,31 @@ class AuthControllerTest {
         userDetailRepository.deleteAll();
         UserStatusRepository.deleteAll();
         userRepository.deleteAll();
+    }
+
+    @AfterEach
+    void tearDown() {
+        transactionRepository.deleteAll();
+        pocketRepository.deleteAll();
+        userTokenRepository.deleteAll();
+        userDetailRepository.deleteAll();
+        UserStatusRepository.deleteAll();
+        userRepository.deleteAll();
+    }
+
+    public WebResponse<AuthResponse> login() throws Exception {
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setUsername(userDummy_username);
+        loginRequest.setPassword(userDummy_password);
+
+        MvcResult loginResult = mockMvc.perform(
+                post("/api/auth/login")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest))
+        ).andReturn();
+        return objectMapper.readValue(loginResult.getResponse().getContentAsString(), new TypeReference<>() {
+        });
     }
 
     @Test
@@ -139,19 +165,7 @@ class AuthControllerTest {
     void logoutSuccess() throws Exception {
         registerSuccess();
 
-        LoginRequest loginRequest = new LoginRequest();
-        loginRequest.setUsername(userDummy_username);
-        loginRequest.setPassword(userDummy_password);
-
-        MvcResult loginResult = mockMvc.perform(
-                post("/api/auth/login")
-                        .accept(MediaType.APPLICATION_JSON)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest))
-        ).andReturn();
-
-        WebResponse<AuthResponse> loginResponseJSON = objectMapper.readValue(loginResult.getResponse().getContentAsString(), new TypeReference<>() {
-        });
+        WebResponse<AuthResponse> loginResponseJSON = login();
 
         mockMvc.perform(
                 post("/api/auth/logout")
@@ -165,7 +179,7 @@ class AuthControllerTest {
             assertNotNull(response.getMessage());
             assertEquals(response.getMessage(), "Logout successfully");
 
-            User userDB = userRepository.findFirstByUsername(loginRequest.getUsername()).orElse(null);
+            User userDB = userRepository.findFirstByUsername(userDummy_username).orElse(null);
             assertNotNull(userDB);
             assertNull(userDB.getUserToken().getAccessToken());
         });
@@ -174,20 +188,7 @@ class AuthControllerTest {
     @Test
     void requestVerificationEmailSuccess() throws Exception {
         registerSuccess();
-
-        LoginRequest loginRequest = new LoginRequest();
-        loginRequest.setUsername(userDummy_username);
-        loginRequest.setPassword(userDummy_password);
-
-        MvcResult loginResult = mockMvc.perform(
-                post("/api/auth/login")
-                        .accept(MediaType.APPLICATION_JSON)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest))
-        ).andReturn();
-
-        WebResponse<AuthResponse> loginResponseJSON = objectMapper.readValue(loginResult.getResponse().getContentAsString(), new TypeReference<>() {
-        });
+        WebResponse<AuthResponse> loginResponseJSON = login();
 
         mockMvc.perform(
                 post("/api/auth/verify")
@@ -201,7 +202,7 @@ class AuthControllerTest {
             assertNotNull(response.getMessage());
             assertEquals(response.getMessage(), "Request verification email successfully");
 
-            User userDB = userRepository.findFirstByUsername(loginRequest.getUsername()).orElse(null);
+            User userDB = userRepository.findFirstByUsername(userDummy_username).orElse(null);
             assertNotNull(userDB);
             assertNotNull(userDB.getUserToken().getVerificationToken());
         });
