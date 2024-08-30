@@ -81,8 +81,8 @@ public class TransactionController {
     @GetMapping(
             path = "/api/transaction/code-pay/{codePay}",
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public WebResponse<CodePayResponse> codePay(User user,
-                                                @PathVariable("codePay") String codePay) {
+    public WebResponse<CodePayResponse> getCodePay(User user,
+                                                   @PathVariable("codePay") String codePay) {
         CodePayResponse codePayResponse = transactionService.getCodePay(user, codePay);
 
         return WebResponse
