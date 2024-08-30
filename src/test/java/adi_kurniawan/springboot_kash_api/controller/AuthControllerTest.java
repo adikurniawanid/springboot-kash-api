@@ -1,17 +1,18 @@
 package adi_kurniawan.springboot_kash_api.controller;
 
 import adi_kurniawan.springboot_kash_api.entity.User;
+import adi_kurniawan.springboot_kash_api.entity.UserToken;
 import adi_kurniawan.springboot_kash_api.model.WebResponse;
-import adi_kurniawan.springboot_kash_api.model.auth.AuthResponse;
-import adi_kurniawan.springboot_kash_api.model.auth.LoginRequest;
-import adi_kurniawan.springboot_kash_api.model.auth.RegisterRequest;
-import adi_kurniawan.springboot_kash_api.model.auth.RequestForgotPasswordRequest;
+import adi_kurniawan.springboot_kash_api.model.auth.*;
 import adi_kurniawan.springboot_kash_api.repository.*;
+import adi_kurniawan.springboot_kash_api.security.BCrypt;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,14 +20,17 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
 @SpringBootTest
 @AutoConfigureMockMvc
 class AuthControllerTest {
+    private static final Logger log = LoggerFactory.getLogger(AuthControllerTest.class);
     private final String userDummy_username = "adikurniawan";
     private final String userDummy_password = "adikurniawan";
     private final String userDummy_email = "adi@mail.com";
@@ -237,30 +241,68 @@ class AuthControllerTest {
     }
 
 
-//    @Test
-//    void verificationEmail() throws Exception {
-//        requestVerificationEmail();
-//
-//        User user = userRepository.findFirstByUsername("adikurniawan").orElseThrow();
-//
-//        String url = "/api/auth/verify/" + user.getUserToken().getVerificationToken() + "/" + user.getPublicId();
-//
-//        log.info("URL >>> {}", url);
-//
-//        mockMvc.perform(
-//                get(url)
-//                        .accept(MediaType.APPLICATION_JSON)
-//        ).andExpectAll(
-//                status().isOk()
-//        ).andDo(result -> {
-//            WebResponse<AuthResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
-//            });
-//            assertNotNull(response.getMessage());
-//            assertEquals(response.getMessage(), "Verification email successfully");
-//        });
-//    }
+    @Test
+    void verificationEmailSuccess() throws Exception {
+        requestVerificationEmailSuccess();
+
+        User user = userRepository.findFirstByUsername(userDummy_username).orElse(null);
+
+        String token = UUID.randomUUID().toString();
+        String hashToken = BCrypt.hashpw(token, BCrypt.gensalt());
+
+        assert user != null;
+        UserToken userToken = userTokenRepository.findFirstByUserId(user.getId()).orElse(null);
+
+        assert userToken != null;
+        userToken.setVerificationToken(hashToken);
+        userTokenRepository.save(userToken);
+
+        mockMvc.perform(
+                get("/api/auth/verify/" + token + "/" + user.getPublicId())
+                        .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<AuthResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNotNull(response.getMessage());
+            assertEquals(response.getMessage(), "Verification email successfully");
+        });
+    }
 
     @Test
-    void changeForgotPasswordSuccess() {
+    void changeForgotPasswordSuccess() throws Exception {
+        forgotPasswordSuccess();
+
+        ChangeForgotPasswordRequest changeForgotPasswordRequest = new ChangeForgotPasswordRequest();
+        changeForgotPasswordRequest.setNewPassword(userDummy_password);
+        changeForgotPasswordRequest.setEmail(userDummy_email);
+
+        User user = userRepository.findFirstByUsername(userDummy_username).orElse(null);
+
+        String token = "ABCDEF";
+        String hashToken = BCrypt.hashpw(token, BCrypt.gensalt());
+        changeForgotPasswordRequest.setOtp(token);
+
+        assert user != null;
+        UserToken userToken = userTokenRepository.findFirstByUserId(user.getId()).orElse(null);
+
+        assert userToken != null;
+        userToken.setForgotPasswordToken(hashToken);
+        userTokenRepository.save(userToken);
+
+        mockMvc.perform(
+                put("/api/auth/forgot-password")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(changeForgotPasswordRequest))
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<AuthResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNotNull(response.getMessage());
+            assertEquals(response.getMessage(), "Change password successfully");
+        });
     }
 }
