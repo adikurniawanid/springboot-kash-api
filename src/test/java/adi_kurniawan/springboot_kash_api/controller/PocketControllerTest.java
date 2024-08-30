@@ -6,21 +6,22 @@ import adi_kurniawan.springboot_kash_api.entity.UserStatus;
 import adi_kurniawan.springboot_kash_api.model.User.OnboardingRequest;
 import adi_kurniawan.springboot_kash_api.model.WebResponse;
 import adi_kurniawan.springboot_kash_api.model.auth.AuthResponse;
-import adi_kurniawan.springboot_kash_api.model.auth.LoginRequest;
 import adi_kurniawan.springboot_kash_api.model.auth.RegisterRequest;
 import adi_kurniawan.springboot_kash_api.model.pocket.CreatePocketRequest;
 import adi_kurniawan.springboot_kash_api.model.pocket.PocketResponse;
+import adi_kurniawan.springboot_kash_api.model.pocket.RenamePocketRequest;
 import adi_kurniawan.springboot_kash_api.repository.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -36,6 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 class PocketControllerTest {
+    private static final Logger log = LoggerFactory.getLogger(PocketControllerTest.class);
     private final String userDummy_username = "adikurniawan";
     private final String userDummy_password = "adikurniawan";
     private final String userDummy_email = "adi@mail.com";
@@ -43,6 +45,8 @@ class PocketControllerTest {
     private final String userDummy_phone = "082108210821";
     private final String userDummy_avatarUrl = "adi.com/profilepicture";
     private final String userDummy_pin = "212121";
+    WebResponse<PocketResponse> pocketResponseJSON = new WebResponse<>();
+    WebResponse<AuthResponse> loginResponseJSON = new WebResponse<>();
     @Autowired
     private UserTokenRepository userTokenRepository;
     @Autowired
@@ -61,8 +65,6 @@ class PocketControllerTest {
     private TransactionRepository transactionRepository;
     @Autowired
     private UserStatusRepository userStatusRepository;
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
 
 
     @BeforeEach
@@ -111,6 +113,8 @@ class PocketControllerTest {
                         .header("Authorization", registerResponseJSON.getData().getAccessToken())
                         .content(objectMapper.writeValueAsString(onboardingRequest))
         );
+
+        loginResponseJSON = registerResponseJSON;
     }
 
     @AfterEach
@@ -123,28 +127,10 @@ class PocketControllerTest {
         userRepository.deleteAll();
     }
 
-    WebResponse<AuthResponse> login() throws Exception {
-        LoginRequest loginRequest = new LoginRequest();
-        loginRequest.setUsername(userDummy_username);
-        loginRequest.setPassword(userDummy_password);
-
-        MvcResult loginResult = mockMvc.perform(
-                post("/api/auth/login")
-                        .accept(MediaType.APPLICATION_JSON)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest))
-        ).andReturn();
-
-        return objectMapper.readValue(loginResult.getResponse().getContentAsString(), new TypeReference<>() {
-        });
-    }
-
     @Test
-    void createSuccess(String pocketName) throws Exception {
-        WebResponse<AuthResponse> loginResponseJSON = login();
-
+    void createSuccess() throws Exception {
         CreatePocketRequest createPocketRequest = new CreatePocketRequest();
-        createPocketRequest.setName(pocketName.isEmpty() ? "Kantong Makan" : pocketName);
+        createPocketRequest.setName("Kantong Makan");
 
         mockMvc.perform(
                 post("/api/pocket")
@@ -170,15 +156,15 @@ class PocketControllerTest {
             assertEquals(pocketDB.getAccountNumber(), response.getData().getAccountNumber());
             assertEquals(pocketDB.getName(), response.getData().getName());
             assertEquals(pocketDB.getBalance(), response.getData().getBalance());
-        });
 
+            pocketResponseJSON = response;
+        });
     }
 
     @Test
     void listSuccess() throws Exception {
-        WebResponse<AuthResponse> loginResponseJSON = login();
-        createSuccess("Kantong Transportasi");
-        createSuccess("Kantong Belanja");
+        createSuccess();
+        createSuccess();
 
         mockMvc.perform(
                 MockMvcRequestBuilders.get("/api/pocket")
@@ -196,16 +182,79 @@ class PocketControllerTest {
         });
     }
 
-//    @Test
-//    void get() throws Exception {
-//    }
-//
-//    @Test
-//    void history() {
-//    }
-//
-//    @Test
-//    void rename() throws Exception {
-//
-//    }
+    @Test
+    void get() throws Exception {
+        createSuccess();
+
+        mockMvc.perform(
+                MockMvcRequestBuilders.get("/api/pocket/" + pocketResponseJSON.getData().getAccountNumber())
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", loginResponseJSON.getData().getAccessToken())
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<PocketResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNotNull(response.getMessage());
+            assertEquals(response.getMessage(), "Get pocket detail successfully");
+            assertNotNull(response.getData());
+            assertNotNull(response.getData().getAccountNumber());
+            assertNotNull(response.getData().getName());
+            assertNotNull(response.getData().getBalance());
+
+            Pocket pocket = pocketRepository.findFirstByAccountNumber(pocketResponseJSON.getData().getAccountNumber()).orElse(null);
+
+            assertNotNull(pocket);
+            assertEquals(response.getData().getAccountNumber(), pocket.getAccountNumber());
+            assertEquals(response.getData().getName(), pocket.getName());
+            assertEquals(response.getData().getBalance(), pocket.getBalance());
+        });
+    }
+
+
+    @Test
+    void history() throws Exception {
+        createSuccess();
+        mockMvc.perform(
+                MockMvcRequestBuilders.get("/api/pocket/" + pocketResponseJSON.getData().getAccountNumber() + "/history")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", loginResponseJSON.getData().getAccessToken())
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<List<PocketResponse>> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNotNull(response.getMessage());
+            assertEquals(response.getMessage(), "Get history list successfully");
+        });
+    }
+
+    @Test
+    void rename() throws Exception {
+        createSuccess();
+        RenamePocketRequest renamePocketRequest = new RenamePocketRequest();
+        renamePocketRequest.setName("NEW POCKET");
+
+        mockMvc.perform(
+                MockMvcRequestBuilders.put("/api/pocket/" + pocketResponseJSON.getData().getAccountNumber())
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", loginResponseJSON.getData().getAccessToken())
+                        .content(objectMapper.writeValueAsString(renamePocketRequest))
+        ).andExpectAll(
+                status().isOk()
+        ).andDo(result -> {
+            WebResponse<PocketResponse> response = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<>() {
+            });
+            assertNotNull(response.getMessage());
+            assertEquals(response.getMessage(), "Rename pocket successfully");
+
+            Pocket pocket = pocketRepository.findFirstByAccountNumber(pocketResponseJSON.getData().getAccountNumber()).orElse(null);
+
+            assertNotNull(pocket);
+            assertEquals("NEW POCKET", pocket.getName());
+        });
+    }
 }
